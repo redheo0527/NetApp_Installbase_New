@@ -47,6 +47,7 @@ urlpatterns = [
     path('ajax/add-product/', views.add_product_ajax, name='add_product_ajax'),
     path('ajax/get-image-url/', views.get_image_url, name='get_image_url'),
     path('ajax/get-available-node-numbers/', views.get_available_node_numbers, name='get_available_node_numbers'),
+    path('ajax/update-avatar/', views.update_avatar, name='update_avatar'),
     path('ajax/add-expansion/<int:pk>/', views.add_expansion_ajax, name='add_expansion_ajax'),
     path('ajax/edit-expansion/<int:pk>/', views.edit_expansion_ajax, name='edit_expansion_ajax'),
     path('ajax/delete-expansion/<int:pk>/', views.delete_expansion_ajax, name='delete_expansion_ajax'),

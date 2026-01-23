@@ -2,7 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
-from .models import InstallBase, Product, Customer, ExpansionHistory, ClusterSwitch, SwitchModel, Issue, RMA, Part, NetAppAPIConfig
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from .models import InstallBase, Product, Customer, ExpansionHistory, ClusterSwitch, SwitchModel, Issue, RMA, Part, NetAppAPIConfig, UserProfile
 from django.utils import timezone
 from datetime import timedelta, datetime
 from .forms import InstallBaseForm, ClusterSwitchForm, SwitchModelForm, IssueForm, RMAForm, PartForm
@@ -266,6 +268,28 @@ def get_image_url(request):
         return JsonResponse({'url': url})
     except:
         return JsonResponse({'url': None})
+
+
+@login_required
+@require_http_methods(["POST"])
+@csrf_exempt
+def update_avatar(request):
+    """사용자 아바타 시드 업데이트"""
+    try:
+        data = json.loads(request.body)
+        seed = data.get('seed', '').strip()
+        
+        if not seed:
+            return JsonResponse({'success': False, 'error': '시드 값이 필요합니다.'}, status=400)
+        
+        # UserProfile 가져오기 또는 생성
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        profile.avatar_seed = seed
+        profile.save()
+        
+        return JsonResponse({'success': True, 'avatar_url': profile.get_avatar_url()})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 def get_available_node_numbers(request):

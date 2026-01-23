@@ -274,3 +274,24 @@ class NetAppAPIConfig(models.Model):
         """싱글톤 패턴으로 설정 가져오기"""
         config, created = cls.objects.get_or_create(pk=1)
         return config
+
+class UserProfile(models.Model):
+    """사용자 프로필 모델"""
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile', verbose_name='사용자')
+    avatar_seed = models.CharField(max_length=100, default='', blank=True, verbose_name='아바타 시드', help_text='DiceBear API에서 사용할 시드 값')
+    is_resigned = models.BooleanField(default=False, verbose_name='퇴사 여부')
+    resigned_date = models.DateField(null=True, blank=True, verbose_name='퇴사일')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "사용자 프로필"
+        verbose_name_plural = "사용자 프로필"
+
+    def __str__(self):
+        return f"{self.user.username} - Profile"
+    
+    def get_avatar_url(self):
+        """DiceBear API를 사용한 아바타 URL 생성"""
+        seed = self.avatar_seed or self.user.username
+        return f"https://api.dicebear.com/7.x/avataaars/svg?seed={seed}"

@@ -120,17 +120,111 @@
         </nav>
 
         <div class="p-8">
-            <div class="relative group p-6 rounded-3xl overflow-hidden shadow-2xl" style="background: linear-gradient(to bottom right, #2563eb, #4f46e5) !important;">
-                <div class="relative z-10">
-                    <h4 class="text-sm font-black mb-1 text-white">{{ user.last_name }}{{ user.first_name }}</h4>
-                    <p class="text-[10px] text-blue-100/70 mb-4 font-medium tracking-tight">NetApp Certified Engineer</p>
-                    <a href="/admin/logout/" class="block w-full py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center text-white">
-                        Logout
-                    </a>
+            <div class="bg-white rounded-3xl p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="relative cursor-pointer group" onclick="openAvatarModal()">
+                        {% if user.profile.avatar_seed %}
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user.profile.avatar_seed }}" 
+                                 alt="Avatar" 
+                                 class="w-12 h-12 rounded-2xl border-2 border-gray-200 hover:border-[#0067b1] transition-all shadow-md">
+                        {% else %}
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user.username }}" 
+                                 alt="Avatar" 
+                                 class="w-12 h-12 rounded-2xl border-2 border-gray-200 hover:border-[#0067b1] transition-all shadow-md">
+                        {% endif %}
+                        <div class="absolute inset-0 bg-black/0 hover:bg-black/10 rounded-2xl transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <i class="fa-solid fa-camera text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-black text-gray-800 mb-0.5">{{ user.last_name }}{{ user.first_name }}</h4>
+                        <p class="text-[10px] text-gray-400 font-medium tracking-tight">NetApp Certified Engineer</p>
+                    </div>
                 </div>
-                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-white opacity-5 rounded-full blur-2xl group-hover:scale-150 transition-all duration-700"></div>
+                <a href="/admin/logout/" class="block w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-[11px] font-bold transition-all text-center">
+                    <i class="fa-solid fa-right-from-bracket mr-2"></i>로그아웃
+                </a>
             </div>
         </div>
+        
+        <!-- 아바타 선택 모달 -->
+        <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeAvatarModal(event)">
+            <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-black text-gray-800">아바타 선택</h3>
+                    <button onclick="closeAvatarModal()" class="text-gray-400 hover:text-gray-600 transition">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-6 gap-3 mb-6 overflow-y-auto flex-1">
+                    {% for i in "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"|make_list %}
+                        {% with seed=user.username|add:i|add:"avatar" %}
+                        <div class="cursor-pointer group relative" onclick="selectAvatar('{{ seed }}')">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ seed }}" 
+                                 alt="Avatar {{ seed }}" 
+                                 class="w-full rounded-xl border-2 border-gray-200 group-hover:border-[#0067b1] transition-all shadow-sm">
+                            <div class="absolute inset-0 bg-[#0067b1]/0 group-hover:bg-[#0067b1]/10 rounded-xl transition-all"></div>
+                        </div>
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+                <div class="flex gap-3 justify-end pt-4 border-t border-gray-100">
+                    <button onclick="closeAvatarModal()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            
+            function openAvatarModal() {
+                document.getElementById('avatarModal').classList.remove('hidden');
+            }
+            
+            function closeAvatarModal(event) {
+                if (event && event.target !== event.currentTarget && !event.target.closest('.bg-white')) {
+                    return;
+                }
+                document.getElementById('avatarModal').classList.add('hidden');
+            }
+            
+            function selectAvatar(seed) {
+                const csrftoken = getCookie('csrftoken');
+                fetch('/ajax/update-avatar/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({ seed: seed })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('아바타 업데이트에 실패했습니다: ' + (data.error || '알 수 없는 오류'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('아바타 업데이트 중 오류가 발생했습니다.');
+                });
+            }
+        </script>
     </aside>
 
     <main class="flex-1 flex flex-col min-w-0">
