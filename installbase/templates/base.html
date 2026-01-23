@@ -140,25 +140,25 @@
             <a href="{% url 'installbase_list' %}" 
                class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all group {% if request.resolver_match.url_name == 'installbase_list' %}nav-active{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
                 <i class="fa-solid fa-server w-5 group-hover:text-blue-400"></i>
-                ONTAP 시스템
+                STORAGE
             </a>
 
             <a href="{% url 'clusterswitch_list' %}" 
                class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all group {% if request.resolver_match.url_name == 'clusterswitch_list' or request.resolver_match.url_name == 'clusterswitch_create' or request.resolver_match.url_name == 'clusterswitch_update' or request.resolver_match.url_name == 'clusterswitch_deleted_list' %}nav-active{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
                 <i class="fa-solid fa-network-wired w-5 group-hover:text-blue-400"></i>
-                Switches
+                SWITCHES
             </a>
 
             <a href="{% url 'issue_list' %}" 
                class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all group {% if request.resolver_match.url_name == 'issue_list' or request.resolver_match.url_name == 'issue_create' or request.resolver_match.url_name == 'issue_update' or request.resolver_match.url_name == 'issue_detail' or request.resolver_match.url_name == 'issue_deleted_list' %}nav-active{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
                 <i class="fa-solid fa-exclamation-triangle w-5 group-hover:text-blue-400"></i>
-                이슈 관리
+                ISSUE MANAGEMENT
             </a>
 
             <a href="{% url 'rma_list' %}" 
                class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all group {% if request.resolver_match.url_name == 'rma_list' or request.resolver_match.url_name == 'rma_create' or request.resolver_match.url_name == 'rma_update' or request.resolver_match.url_name == 'rma_deleted_list' %}nav-active{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
                 <i class="fa-solid fa-box w-5 group-hover:text-blue-400"></i>
-                RMA 관리
+                RMA MANAGEMENT
             </a>
             
             {% if user.is_staff or user.is_superuser %}
