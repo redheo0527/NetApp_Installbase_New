@@ -71,10 +71,33 @@
     .chart-card {
         transition: all 0.3s ease;
         background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        position: relative;
+        overflow: hidden;
+    }
+    .chart-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .chart-card:hover::before {
+        opacity: 1;
     }
     .chart-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 0 30px rgba(99, 102, 241, 0.2);
+    }
+    .chart-card canvas {
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+        transition: filter 0.3s ease;
+    }
+    .chart-card:hover canvas {
+        filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
     }
 </style>
 
@@ -202,101 +225,358 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+    // 그라데이션 생성 함수
+    function createGradient(ctx, color1, color2) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, color1);
+        gradient.addColorStop(1, color2);
+        return gradient;
+    }
+
+    // 중앙 텍스트 플러그인
+    const centerTextPlugin = {
+        id: 'centerText',
+        beforeDraw: function(chart) {
+            const ctx = chart.ctx;
+            const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+            const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+            
+            ctx.save();
+            ctx.font = 'bold 24px Inter';
+            ctx.fillStyle = '#1f2937';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+            ctx.fillText(total, centerX, centerY - 10);
+            
+            ctx.font = '12px Inter';
+            ctx.fillStyle = '#6b7280';
+            ctx.fillText('Total', centerX, centerY + 15);
+            ctx.restore();
+        }
+    };
+
     // 글로벌 장비 배치 현황 (도넛 차트)
     const countryCtx = document.getElementById('countryChart').getContext('2d');
+    const countryGradients = [
+        createGradient(countryCtx, '#667eea', '#764ba2'),
+        createGradient(countryCtx, '#f093fb', '#f5576c'),
+        createGradient(countryCtx, '#4facfe', '#00f2fe'),
+        createGradient(countryCtx, '#43e97b', '#38f9d7'),
+        createGradient(countryCtx, '#fa709a', '#fee140'),
+        createGradient(countryCtx, '#30cfd0', '#330867'),
+        createGradient(countryCtx, '#a8edea', '#fed6e3'),
+        createGradient(countryCtx, '#ff9a9e', '#fecfef'),
+        createGradient(countryCtx, '#ffecd2', '#fcb69f'),
+        createGradient(countryCtx, '#ff6e7f', '#bfe9ff')
+    ];
+    
+    const countryData = {{ country_data|safe }};
+    const countryBgColors = [];
+    for (let i = 0; i < countryData.length; i++) {
+        countryBgColors.push(countryGradients[i % countryGradients.length]);
+    }
+
     new Chart(countryCtx, {
         type: 'doughnut',
         data: {
             labels: {{ country_labels|safe }},
             datasets: [{
-                data: {{ country_data|safe }},
-                backgroundColor: [
-                    '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140', '#30cfd0', '#330867', '#a8edea', '#fed6e3', '#ff9a9e'
-                ],
-                borderWidth: 3,
-                borderColor: '#ffffff'
+                data: countryData,
+                backgroundColor: countryBgColors,
+                borderWidth: 5,
+                borderColor: '#ffffff',
+                hoverBorderWidth: 8,
+                hoverOffset: 15
             }]
         },
+        plugins: [centerTextPlugin],
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            cutout: '70%',
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 2000,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        padding: 15,
+                        padding: 20,
                         font: {
                             size: 12,
-                            weight: 'bold'
+                            weight: 'bold',
+                            family: 'Inter'
+                        },
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const dataset = data.datasets[0];
+                                    const value = dataset.data[i];
+                                    const total = dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return {
+                                        text: `${label} (${percentage}%)`,
+                                        fillStyle: dataset.backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 15,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
                         }
                     }
                 }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
         }
     });
 
     // 장비 모델 분포 (도넛 차트)
     const modelCtx = document.getElementById('modelChart').getContext('2d');
+    const modelGradients = [
+        createGradient(modelCtx, '#ff6e7f', '#bfe9ff'),
+        createGradient(modelCtx, '#ffecd2', '#fcb69f'),
+        createGradient(modelCtx, '#667eea', '#764ba2'),
+        createGradient(modelCtx, '#f093fb', '#f5576c'),
+        createGradient(modelCtx, '#4facfe', '#00f2fe'),
+        createGradient(modelCtx, '#43e97b', '#38f9d7'),
+        createGradient(modelCtx, '#fa709a', '#fee140'),
+        createGradient(modelCtx, '#30cfd0', '#330867'),
+        createGradient(modelCtx, '#a8edea', '#fed6e3'),
+        createGradient(modelCtx, '#ff9a9e', '#fecfef')
+    ];
+    
+    const modelData = {{ chart_data|safe }};
+    const modelBgColors = [];
+    for (let i = 0; i < modelData.length; i++) {
+        modelBgColors.push(modelGradients[i % modelGradients.length]);
+    }
+
     new Chart(modelCtx, {
         type: 'doughnut',
         data: {
             labels: {{ chart_labels|safe }},
             datasets: [{
-                data: {{ chart_data|safe }},
-                backgroundColor: [
-                    '#ff6e7f', '#bfe9ff', '#ffecd2', '#fcb69f', '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140', '#30cfd0'
-                ],
-                borderWidth: 3,
-                borderColor: '#ffffff'
+                data: modelData,
+                backgroundColor: modelBgColors,
+                borderWidth: 5,
+                borderColor: '#ffffff',
+                hoverBorderWidth: 8,
+                hoverOffset: 15
             }]
         },
+        plugins: [centerTextPlugin],
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            cutout: '70%',
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 2000,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        padding: 15,
+                        padding: 20,
                         font: {
                             size: 12,
-                            weight: 'bold'
+                            weight: 'bold',
+                            family: 'Inter'
+                        },
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const dataset = data.datasets[0];
+                                    const value = dataset.data[i];
+                                    const total = dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return {
+                                        text: `${label} (${percentage}%)`,
+                                        fillStyle: dataset.backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 15,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
                         }
                     }
                 }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
         }
     });
 
     // 고객사별 장비 대수 (도넛 차트)
     const customerCtx = document.getElementById('customerChart').getContext('2d');
+    const customerGradients = [
+        createGradient(customerCtx, '#330867', '#a8edea'),
+        createGradient(customerCtx, '#fed6e3', '#ff9a9e'),
+        createGradient(customerCtx, '#fecfef', '#ffecd2'),
+        createGradient(customerCtx, '#fcb69f', '#ff6e7f'),
+        createGradient(customerCtx, '#bfe9ff', '#667eea'),
+        createGradient(customerCtx, '#764ba2', '#f093fb'),
+        createGradient(customerCtx, '#f5576c', '#4facfe'),
+        createGradient(customerCtx, '#00f2fe', '#43e97b'),
+        createGradient(customerCtx, '#38f9d7', '#fa709a'),
+        createGradient(customerCtx, '#fee140', '#30cfd0')
+    ];
+    
+    const customerData = {{ customer_data|safe }};
+    const customerBgColors = [];
+    for (let i = 0; i < customerData.length; i++) {
+        customerBgColors.push(customerGradients[i % customerGradients.length]);
+    }
+
     new Chart(customerCtx, {
         type: 'doughnut',
         data: {
             labels: {{ customer_labels|safe }},
             datasets: [{
-                data: {{ customer_data|safe }},
-                backgroundColor: [
-                    '#330867', '#a8edea', '#fed6e3', '#ff9a9e', '#fecfef', '#ffecd2', '#fcb69f', '#ff6e7f', '#bfe9ff', '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'
-                ],
-                borderWidth: 3,
-                borderColor: '#ffffff'
+                data: customerData,
+                backgroundColor: customerBgColors,
+                borderWidth: 5,
+                borderColor: '#ffffff',
+                hoverBorderWidth: 8,
+                hoverOffset: 15
             }]
         },
+        plugins: [centerTextPlugin],
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            cutout: '70%',
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 2000,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        padding: 15,
+                        padding: 20,
                         font: {
                             size: 12,
-                            weight: 'bold'
+                            weight: 'bold',
+                            family: 'Inter'
+                        },
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const dataset = data.datasets[0];
+                                    const value = dataset.data[i];
+                                    const total = dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return {
+                                        text: `${label} (${percentage}%)`,
+                                        fillStyle: dataset.backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 15,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
                         }
                     }
                 }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
         }
     });
