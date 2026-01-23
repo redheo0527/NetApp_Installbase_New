@@ -1126,6 +1126,8 @@ def issue_list(request):
         except (ValueError, TypeError):
             issues = issues.order_by('-issue_date')
         # 정렬이 지정된 경우에도 미완료 건을 먼저 표시
+        # 하지만 최근 발생일자 순을 유지하기 위해 issue_date 기준으로 추가 정렬
+        issues = issues.order_by('-issue_date')
         issues_list = list(issues)
         incomplete = []
         complete = []
@@ -1134,6 +1136,7 @@ def issue_list(request):
                 incomplete.append(issue)
             else:
                 complete.append(issue)
+        # 각 그룹 내에서 최근 발생일자 순 유지 (이미 정렬되어 있음)
         issues_list = incomplete + complete
         # QuerySet으로 다시 변환할 수 없으므로 리스트로 처리
         from django.core.paginator import Paginator as ListPaginator
@@ -1142,7 +1145,8 @@ def issue_list(request):
         page_obj = paginator.get_page(page_number)
     else:
         # 기본 정렬: 완료되지 않은 케이스(status != '종료')를 먼저, 그 다음 완료된 케이스
-        # 완료되지 않은 케이스는 발생일자 오래된 순, 완료된 케이스도 발생일자 오래된 순
+        # 최근 발생일자 순으로 정렬 (내림차순)
+        issues = issues.order_by('-issue_date')
         issues_list = list(issues)
         incomplete = []
         complete = []
@@ -1151,9 +1155,7 @@ def issue_list(request):
                 incomplete.append(issue)
             else:
                 complete.append(issue)
-        # 발생일자 오래된 순으로 정렬 (None은 맨 뒤로) - 오름차순
-        incomplete.sort(key=lambda x: (x.issue_date is None, x.issue_date or datetime.max))
-        complete.sort(key=lambda x: (x.issue_date is None, x.issue_date or datetime.max))
+        # 최근 발생일자 순으로 정렬 (이미 issue_date 내림차순으로 정렬되어 있음)
         # 완료/미완료 구분선 추가
         if incomplete and complete:
             incomplete[-1].show_divider = True
