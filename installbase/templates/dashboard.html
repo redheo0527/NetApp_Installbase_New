@@ -16,209 +16,234 @@
     .card-animate {
         animation: fadeInUp 0.6s ease-out;
     }
-    .gradient-card-1 {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .gradient-card-2 {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-    .gradient-card-3 {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-    .gradient-card-4 {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    }
-    .gradient-card-5 {
-        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    }
-    .gradient-card-6 {
-        background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
-    }
-    .gradient-card-7 {
-        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-    }
-    .gradient-card-8 {
-        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-    }
-    .gradient-card-9 {
-        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-    }
-    .gradient-card-10 {
-        background: linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%);
-    }
     .stat-card {
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
     }
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s;
-    }
-    .stat-card:hover::before {
-        left: 100%;
-    }
     .stat-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        transform: scale(1.02);
+    }
+    .issue-card {
+        transition: all 0.3s ease;
+    }
+    .issue-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     }
     .chart-card {
         transition: all 0.3s ease;
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-        position: relative;
-        overflow: hidden;
-    }
-    .chart-card::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-    .chart-card:hover::before {
-        opacity: 1;
     }
     .chart-card:hover {
-        transform: translateY(-5px) scale(1.02);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 0 30px rgba(99, 102, 241, 0.2);
-    }
-    .chart-card canvas {
-        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
-        transition: filter 0.3s ease;
-    }
-    .chart-card:hover canvas {
-        filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+        transform: translateY(-4px);
     }
 </style>
 
-<div class="p-8">
-    <div class="mb-8 card-animate">
-        <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">Dashboard</h1>
-        <p class="text-gray-600 text-lg">NetApp 인프라 현황을 한눈에 확인하세요</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="stat-card gradient-card-1 p-6 rounded-2xl shadow-lg border-0 text-white card-animate" style="animation-delay: 0.1s">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white shadow-lg">
-                    <i class="fa-solid fa-check-circle text-2xl"></i>
+<div class="min-h-screen bg-[#f8fafc] p-4 lg:p-10">
+    <!-- Top Header Section -->
+    <div class="max-w-7xl mx-auto mb-10">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+                <div class="flex items-center gap-2 mb-2 text-[#0067B3] font-bold text-sm uppercase tracking-widest">
+                    <div class="w-2 h-2 bg-[#0067B3] rounded-full animate-pulse"></div>
+                    Infrastructure Monitoring
                 </div>
-                <p class="text-sm font-bold text-white/90">활성 장비</p>
+                <h1 class="text-4xl font-black text-gray-900 mb-1">NetApp Dashboard</h1>
+                <p class="text-gray-500 mt-1">인프라 자산 및 RMA 라이프사이클 통합 관리</p>
             </div>
-            <p class="text-3xl font-bold text-white">{{ active_storage_count }} Sets</p>
-        </div>
-        
-        <div class="stat-card gradient-card-2 p-6 rounded-2xl shadow-lg border-0 text-white card-animate" style="animation-delay: 0.2s">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white shadow-lg">
-                    <i class="fa-solid fa-server text-2xl"></i>
+            
+            <div class="flex items-center gap-3">
+                <div class="relative hidden sm:block">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input 
+                        class="pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#0067B3] w-64 text-sm transition-all"
+                        placeholder="장비 ID 또는 클러스터 검색..."
+                    />
                 </div>
-                <p class="text-sm font-bold text-white/90">전체 장비</p>
+                <button class="p-2.5 bg-white border border-gray-200 rounded-2xl text-gray-500 hover:text-[#0067B3] transition-colors relative">
+                    <i class="fa-solid fa-bell text-lg"></i>
+                    <span class="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
             </div>
-            <p class="text-3xl font-bold text-white">{{ total_storage_count }} Sets</p>
-        </div>
-        
-        <div class="stat-card gradient-card-3 p-6 rounded-2xl shadow-lg border-0 text-white card-animate" style="animation-delay: 0.3s">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white shadow-lg">
-                    <i class="fa-solid fa-exclamation-triangle text-2xl"></i>
-                </div>
-                <p class="text-sm font-bold text-white/90">진행 중인 이슈</p>
-            </div>
-            <p class="text-3xl font-bold text-white">{{ open_issues_count }} 건</p>
-        </div>
-        
-        <div class="stat-card gradient-card-4 p-6 rounded-2xl shadow-lg border-0 text-white card-animate" style="animation-delay: 0.4s">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white shadow-lg">
-                    <i class="fa-solid fa-box text-2xl"></i>
-                </div>
-                <p class="text-sm font-bold text-white/90">미반납 RMA</p>
-            </div>
-            <p class="text-3xl font-bold text-white">{{ not_returned_rma_count }} 건</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="chart-card p-6 rounded-2xl shadow-lg border-0 card-animate" style="animation-delay: 0.5s">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-md">
-                    <i class="fa-solid fa-globe text-lg"></i>
-                </div>
-                <h3 class="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">글로벌 장비 배치 현황</h3>
-            </div>
-            <canvas id="countryChart" width="300" height="300"></canvas>
-        </div>
-        
-        <div class="chart-card p-6 rounded-2xl shadow-lg border-0 card-animate" style="animation-delay: 0.6s">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-red-600 rounded-xl flex items-center justify-center text-white shadow-md">
-                    <i class="fa-solid fa-chart-pie text-lg"></i>
-                </div>
-                <h3 class="text-lg font-bold bg-gradient-to-r from-pink-600 to-red-600 bg-clip-text text-transparent">장비 모델 분포</h3>
-            </div>
-            <canvas id="modelChart" width="300" height="300"></canvas>
-        </div>
-        
-        <div class="chart-card p-6 rounded-2xl shadow-lg border-0 card-animate" style="animation-delay: 0.7s">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-600 rounded-xl flex items-center justify-center text-white shadow-md">
-                    <i class="fa-solid fa-building text-lg"></i>
-                </div>
-                <h3 class="text-lg font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">고객사별 장비 대수</h3>
-            </div>
-            <canvas id="customerChart" width="300" height="300"></canvas>
-        </div>
-    </div>
-
-    <div class="bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 rounded-2xl shadow-xl border-0 p-8 card-animate" style="animation-delay: 0.8s">
-        <div class="flex items-center gap-3 mb-6">
-            <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i class="fa-solid fa-bell text-xl"></i>
-            </div>
-            <h3 class="text-2xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">최근 1주일 내 발생한 이슈</h3>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {% for issue in recent_issues %}
-            <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 border-0 shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-2" onclick="window.location.href='{% url 'issue_detail' issue.pk %}'" style="background: linear-gradient(135deg, {% cycle 'rgba(99, 102, 241, 0.05)' 'rgba(236, 72, 153, 0.05)' 'rgba(59, 130, 246, 0.05)' %}, rgba(255, 255, 255, 0.9));">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="flex-1">
-                        <p class="font-bold text-gray-800 text-sm mb-1">{{ issue.title|default:"-" }}</p>
-                        <p class="text-xs text-gray-500">{{ issue.target_cluster.customer.name|default:"-" }} / {{ issue.target_cluster.cluster_name|default:"-" }}</p>
+    <div class="max-w-7xl mx-auto space-y-8">
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="stat-card relative overflow-hidden bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl shadow-emerald-500/20 transition-transform card-animate" style="animation-delay: 0.1s">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400 to-teal-500 opacity-10 rounded-bl-full"></div>
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-lg">
+                        <i class="fa-solid fa-check-circle text-xl"></i>
                     </div>
-                    <div class="ml-2">
-                        {% if issue.status == '진행중' %}
-                        <span class="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl text-xs font-bold shadow-md">{{ issue.status }}</span>
-                        {% else %}
-                        <span class="px-3 py-1.5 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-xl text-xs font-bold shadow-md">{{ issue.status }}</span>
-                        {% endif %}
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-tight">활성 장비</p>
+                </div>
+                <div class="flex items-baseline gap-1">
+                    <span class="text-3xl font-black text-gray-900">{{ active_storage_count }}</span>
+                    <span class="text-sm font-medium text-gray-400">Sets</span>
+                </div>
+            </div>
+            
+            <div class="stat-card relative overflow-hidden bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl shadow-blue-500/20 transition-transform card-animate" style="animation-delay: 0.2s">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 opacity-10 rounded-bl-full"></div>
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg">
+                        <i class="fa-solid fa-server text-xl"></i>
                     </div>
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-tight">전체 장비</p>
                 </div>
-                <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                    <span class="px-3 py-1.5 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-xl text-xs font-bold shadow-sm">
-                        {{ issue.get_issue_type_display }}
-                    </span>
-                    <span class="text-xs text-gray-500 font-semibold">{{ issue.issue_date|date:"Y-m-d" }}</span>
-                </div>
-            </div>
-            {% empty %}
-            <div class="col-span-3 py-16 text-center">
-                <div class="inline-block p-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-inner">
-                    <i class="fa-solid fa-inbox text-5xl mb-4 block text-gray-400"></i>
-                    <p class="text-gray-500 font-semibold">최근 1주일 내 발생한 이슈가 없습니다.</p>
+                <div class="flex items-baseline gap-1">
+                    <span class="text-3xl font-black text-gray-900">{{ total_storage_count }}</span>
+                    <span class="text-sm font-medium text-gray-400">Sets</span>
                 </div>
             </div>
-            {% endfor %}
+            
+            <div class="stat-card relative overflow-hidden bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl shadow-orange-500/20 transition-transform card-animate" style="animation-delay: 0.3s">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-400 to-red-500 opacity-10 rounded-bl-full"></div>
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white shadow-lg">
+                        <i class="fa-solid fa-exclamation-triangle text-xl"></i>
+                    </div>
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-tight">진행 중인 이슈</p>
+                </div>
+                <div class="flex items-baseline gap-1">
+                    <span class="text-3xl font-black text-gray-900">{{ open_issues_count }}</span>
+                    <span class="text-sm font-medium text-gray-400">건</span>
+                </div>
+            </div>
+            
+            <div class="stat-card relative overflow-hidden bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl shadow-rose-500/20 transition-transform card-animate" style="animation-delay: 0.4s">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-rose-500 to-pink-600 opacity-10 rounded-bl-full"></div>
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white shadow-lg">
+                        <i class="fa-solid fa-box text-xl"></i>
+                    </div>
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-tight">미반납 RMA</p>
+                </div>
+                <div class="flex items-baseline gap-1">
+                    <span class="text-3xl font-black text-gray-900">{{ not_returned_rma_count }}</span>
+                    <span class="text-sm font-medium text-gray-400">건</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="chart-card bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm card-animate" style="animation-delay: 0.5s">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-lg font-black flex items-center gap-2">
+                        <span class="p-2 bg-gray-100 rounded-xl text-[#0067B3]">
+                            <i class="fa-solid fa-globe text-lg"></i>
+                        </span>
+                        글로벌 장비 배치
+                    </h3>
+                    <button class="text-gray-400 hover:text-[#0067B3] transition-colors">
+                        <i class="fa-solid fa-external-link text-sm"></i>
+                    </button>
+                </div>
+                <canvas id="countryChart" width="300" height="300"></canvas>
+            </div>
+            
+            <div class="chart-card bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm card-animate" style="animation-delay: 0.6s">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-lg font-black flex items-center gap-2">
+                        <span class="p-2 bg-gray-100 rounded-xl text-[#0067B3]">
+                            <i class="fa-solid fa-chart-pie text-lg"></i>
+                        </span>
+                        장비 모델 분포
+                    </h3>
+                    <button class="text-gray-400 hover:text-[#0067B3] transition-colors">
+                        <i class="fa-solid fa-external-link text-sm"></i>
+                    </button>
+                </div>
+                <canvas id="modelChart" width="300" height="300"></canvas>
+            </div>
+            
+            <div class="chart-card bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm card-animate" style="animation-delay: 0.7s">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-lg font-black flex items-center gap-2">
+                        <span class="p-2 bg-gray-100 rounded-xl text-[#0067B3]">
+                            <i class="fa-solid fa-building text-lg"></i>
+                        </span>
+                        고객사별 비중
+                    </h3>
+                    <button class="text-gray-400 hover:text-[#0067B3] transition-colors">
+                        <i class="fa-solid fa-external-link text-sm"></i>
+                    </button>
+                </div>
+                <canvas id="customerChart" width="300" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Issues Section -->
+        <div class="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden card-animate" style="animation-delay: 0.8s">
+            <div class="p-8 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-transparent to-gray-50/50">
+                <div>
+                    <h3 class="text-xl font-black flex items-center gap-2 mb-1">
+                        <i class="fa-solid fa-clock text-[#0067B3]" style="font-size: 24px;"></i>
+                        최근 주요 발생 이슈
+                    </h3>
+                    <p class="text-sm text-gray-500 mt-1">최근 1주일간 보고된 긴급 점검 항목입니다.</p>
+                </div>
+                <a href="{% url 'issue_list' %}" class="px-6 py-2.5 bg-gray-900 text-white rounded-2xl text-sm font-bold hover:opacity-90 transition-opacity">
+                    전체 로그 보기
+                </a>
+            </div>
+            
+            <div class="p-4 lg:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {% for issue in recent_issues %}
+                    <div class="issue-card group bg-gray-50/50 border border-gray-100 rounded-3xl p-6 hover:bg-white hover:shadow-2xl hover:shadow-blue-500/10 transition-all cursor-pointer relative overflow-hidden" onclick="window.location.href='{% url 'issue_detail' issue.pk %}'">
+                        <div class="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="fa-solid fa-chevron-right text-[#0067B3]" style="font-size: 20px;"></i>
+                        </div>
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            {% if issue.status == '진행중' %}
+                            <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-600 border border-blue-200">
+                                {{ issue.status }}
+                            </span>
+                            {% else %}
+                            <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
+                                {{ issue.status }}
+                            </span>
+                            {% endif %}
+                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{{ issue.issue_date|date:"Y-m-d" }}</span>
+                        </div>
+
+                        <h4 class="text-lg font-black mb-1 group-hover:text-[#0067B3] transition-colors line-clamp-1">{{ issue.title|default:"-" }}</h4>
+                        
+                        <div class="space-y-2 mt-4">
+                            <div class="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                                <i class="fa-solid fa-building text-gray-400" style="font-size: 14px;"></i>
+                                <span>{{ issue.target_cluster.customer.name|default:"-" }}</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                                <i class="fa-solid fa-map-marker-alt text-gray-400" style="font-size: 14px;"></i>
+                                <span>{{ issue.target_cluster.cluster_name|default:"-" }}</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex items-center justify-between">
+                            <span class="text-[10px] font-black px-2 py-1 bg-white border border-gray-200 rounded-md shadow-sm">
+                                {{ issue.get_issue_type_display }}
+                            </span>
+                            <span class="text-[#0067B3] text-xs font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                상세보기 <i class="fa-solid fa-chevron-right" style="font-size: 14px;"></i>
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-span-3 py-20 text-center">
+                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                            <i class="fa-solid fa-box text-4xl"></i>
+                        </div>
+                        <p class="text-gray-500 font-bold">최근 발생한 이슈가 없습니다.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -260,16 +285,14 @@
     // 글로벌 장비 배치 현황 (도넛 차트)
     const countryCtx = document.getElementById('countryChart').getContext('2d');
     const countryGradients = [
-        createGradient(countryCtx, '#667eea', '#764ba2'),
-        createGradient(countryCtx, '#f093fb', '#f5576c'),
-        createGradient(countryCtx, '#4facfe', '#00f2fe'),
-        createGradient(countryCtx, '#43e97b', '#38f9d7'),
-        createGradient(countryCtx, '#fa709a', '#fee140'),
-        createGradient(countryCtx, '#30cfd0', '#330867'),
-        createGradient(countryCtx, '#a8edea', '#fed6e3'),
-        createGradient(countryCtx, '#ff9a9e', '#fecfef'),
-        createGradient(countryCtx, '#ffecd2', '#fcb69f'),
-        createGradient(countryCtx, '#ff6e7f', '#bfe9ff')
+        createGradient(countryCtx, '#3b82f6', '#60a5fa'),
+        createGradient(countryCtx, '#60a5fa', '#93c5fd'),
+        createGradient(countryCtx, '#93c5fd', '#bfdbfe'),
+        createGradient(countryCtx, '#6366f1', '#818cf8'),
+        createGradient(countryCtx, '#818cf8', '#a5b4fc'),
+        createGradient(countryCtx, '#06b6d4', '#22d3ee'),
+        createGradient(countryCtx, '#22d3ee', '#67e8f9'),
+        createGradient(countryCtx, '#67e8f9', '#a5f3fc')
     ];
     
     const countryData = {{ country_data|safe }};
@@ -368,16 +391,12 @@
     // 장비 모델 분포 (도넛 차트)
     const modelCtx = document.getElementById('modelChart').getContext('2d');
     const modelGradients = [
-        createGradient(modelCtx, '#ff6e7f', '#bfe9ff'),
-        createGradient(modelCtx, '#ffecd2', '#fcb69f'),
-        createGradient(modelCtx, '#667eea', '#764ba2'),
-        createGradient(modelCtx, '#f093fb', '#f5576c'),
-        createGradient(modelCtx, '#4facfe', '#00f2fe'),
-        createGradient(modelCtx, '#43e97b', '#38f9d7'),
-        createGradient(modelCtx, '#fa709a', '#fee140'),
-        createGradient(modelCtx, '#30cfd0', '#330867'),
-        createGradient(modelCtx, '#a8edea', '#fed6e3'),
-        createGradient(modelCtx, '#ff9a9e', '#fecfef')
+        createGradient(modelCtx, '#6366f1', '#818cf8'),
+        createGradient(modelCtx, '#818cf8', '#a5b4fc'),
+        createGradient(modelCtx, '#3b82f6', '#60a5fa'),
+        createGradient(modelCtx, '#60a5fa', '#93c5fd'),
+        createGradient(modelCtx, '#06b6d4', '#22d3ee'),
+        createGradient(modelCtx, '#22d3ee', '#67e8f9')
     ];
     
     const modelData = {{ chart_data|safe }};
@@ -476,16 +495,12 @@
     // 고객사별 장비 대수 (도넛 차트)
     const customerCtx = document.getElementById('customerChart').getContext('2d');
     const customerGradients = [
-        createGradient(customerCtx, '#330867', '#a8edea'),
-        createGradient(customerCtx, '#fed6e3', '#ff9a9e'),
-        createGradient(customerCtx, '#fecfef', '#ffecd2'),
-        createGradient(customerCtx, '#fcb69f', '#ff6e7f'),
-        createGradient(customerCtx, '#bfe9ff', '#667eea'),
-        createGradient(customerCtx, '#764ba2', '#f093fb'),
-        createGradient(customerCtx, '#f5576c', '#4facfe'),
-        createGradient(customerCtx, '#00f2fe', '#43e97b'),
-        createGradient(customerCtx, '#38f9d7', '#fa709a'),
-        createGradient(customerCtx, '#fee140', '#30cfd0')
+        createGradient(customerCtx, '#06b6d4', '#22d3ee'),
+        createGradient(customerCtx, '#22d3ee', '#67e8f9'),
+        createGradient(customerCtx, '#67e8f9', '#a5f3fc'),
+        createGradient(customerCtx, '#3b82f6', '#60a5fa'),
+        createGradient(customerCtx, '#6366f1', '#818cf8'),
+        createGradient(customerCtx, '#818cf8', '#a5b4fc')
     ];
     
     const customerData = {{ customer_data|safe }};
