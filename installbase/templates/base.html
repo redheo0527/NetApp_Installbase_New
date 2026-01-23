@@ -42,13 +42,21 @@
             box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
         }
         .sidebar-gradient {
-            background: linear-gradient(180deg, #002d5a 0%, #001a35 100%);
+            background: linear-gradient(180deg, #002d5a 0%, #001a35 100%) !important;
+        }
+        aside {
+            background: linear-gradient(180deg, #002d5a 0%, #001a35 100%) !important;
         }
         .nav-active {
             background-color: rgba(0, 103, 177, 0.2) !important;
             color: #00d2ff !important;
             border: 1px solid rgba(0, 210, 255, 0.3) !important;
             box-shadow: 0 0 15px rgba(0, 210, 255, 0.4) !important;
+        }
+        body {
+            background: #f0f4f9 !important;
+            background-image: radial-gradient(at 0% 0%, rgba(0, 103, 177, 0.05) 0px, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(0, 210, 255, 0.05) 0px, transparent 50%) !important;
         }
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
@@ -58,7 +66,7 @@
     </style>
 </head>
 <body class="bg-pattern text-slate-800 flex min-h-screen">
-    <aside class="w-80 hidden lg:flex flex-col text-white shadow-2xl shrink-0 sticky top-0 h-screen border-r border-white/5" style="background: linear-gradient(180deg, #002d5a 0%, #001a35 100%);">
+    <aside class="w-80 hidden lg:flex flex-col text-white shadow-2xl shrink-0 sticky top-0 h-screen border-r border-white/5 sidebar-gradient">
         <div class="p-12">
             <div class="flex flex-col gap-2">
                 <div class="flex items-center gap-3">
@@ -112,7 +120,7 @@
         </nav>
 
         <div class="p-8">
-            <div class="relative group p-6 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-800 overflow-hidden shadow-2xl">
+            <div class="relative group p-6 rounded-3xl overflow-hidden shadow-2xl" style="background: linear-gradient(to bottom right, #2563eb, #4f46e5) !important;">
                 <div class="relative z-10">
                     <h4 class="text-sm font-black mb-1 text-white">{{ user.last_name }}{{ user.first_name }}</h4>
                     <p class="text-[10px] text-blue-100/70 mb-4 font-medium tracking-tight">NetApp Certified Engineer</p>
