@@ -1461,6 +1461,8 @@ def rma_list(request):
         except (ValueError, TypeError):
             rmas = rmas.order_by('-created_at')
         # 정렬이 지정된 경우에도 미완료 건을 먼저 표시
+        # 하지만 최근 일자 순을 유지하기 위해 created_at 기준으로 추가 정렬
+        rmas = rmas.order_by('-created_at')
         rmas_list = list(rmas)
         incomplete = []
         complete = []
@@ -1469,6 +1471,7 @@ def rma_list(request):
                 incomplete.append(rma)
             else:
                 complete.append(rma)
+        # 각 그룹 내에서 최근 일자 순 유지 (이미 정렬되어 있음)
         rmas_list = incomplete + complete
         # QuerySet으로 다시 변환할 수 없으므로 리스트로 처리
         from django.core.paginator import Paginator as ListPaginator
@@ -1477,7 +1480,8 @@ def rma_list(request):
         page_obj = paginator.get_page(page_number)
     else:
         # 기본 정렬: 완료되지 않은 건(미반납 또는 배송 미완료)을 먼저, 그 다음 완료된 건
-        # 완료되지 않은 건은 배송일자 빠른 순, 완료된 건도 배송일자 빠른 순
+        # 최근 일자(created_at) 기준 내림차순 정렬
+        rmas = rmas.order_by('-created_at')
         rmas_list = list(rmas)
         incomplete = []
         complete = []
@@ -1486,9 +1490,7 @@ def rma_list(request):
                 incomplete.append(rma)
             else:
                 complete.append(rma)
-        # 배송일자 빠른 순으로 정렬 (None은 맨 뒤로) - 오름차순
-        incomplete.sort(key=lambda x: (x.delivery_date is None, x.delivery_date or datetime.max))
-        complete.sort(key=lambda x: (x.delivery_date is None, x.delivery_date or datetime.max))
+        # 최근 일자 순으로 정렬 (이미 created_at 내림차순으로 정렬되어 있음)
         # 완료/미완료 구분선 추가
         if incomplete and complete:
             incomplete[-1].show_divider = True
