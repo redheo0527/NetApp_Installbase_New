@@ -225,9 +225,10 @@
                 </a>
             </div>
         </div>
-        
-        <!-- 아바타 선택 모달 -->
-        <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 9999 !important; position: fixed !important;" onclick="closeAvatarModal(event)">
+    </aside>
+
+    <!-- 아바타 선택 모달 - 사이드바 밖으로 이동 -->
+    <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 99999 !important; position: fixed !important;" onclick="closeAvatarModal(event)">
             <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col relative" style="z-index: 10000 !important; position: relative !important;" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xl font-black text-gray-800">아바타 선택</h3>
@@ -262,59 +263,96 @@
                 </div>
             </div>
         </div>
-        
-        <script>
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            }
-            
-            function openAvatarModal() {
-                document.getElementById('avatarModal').classList.remove('hidden');
-            }
-            
-            function closeAvatarModal(event) {
-                if (event && event.target !== event.currentTarget && !event.target.closest('.bg-white')) {
-                    return;
-                }
-                document.getElementById('avatarModal').classList.add('hidden');
-            }
-            
-            function selectAvatar(seed) {
-                const csrftoken = getCookie('csrftoken');
-                fetch('/ajax/update-avatar/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrftoken
-                    },
-                    body: JSON.stringify({ seed: seed })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('아바타 업데이트에 실패했습니다: ' + (data.error || '알 수 없는 오류'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('아바타 업데이트 중 오류가 발생했습니다.');
-                });
-            }
-        </script>
     </aside>
+
+    <!-- 아바타 선택 모달 - 사이드바 밖으로 이동하여 최상위에 표시 -->
+    <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 99999 !important; position: fixed !important;" onclick="closeAvatarModal(event)">
+        <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col relative" style="z-index: 100000 !important; position: relative !important;" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-black text-gray-800">아바타 선택</h3>
+                <button onclick="closeAvatarModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-6 gap-3 mb-6 overflow-y-auto flex-1">
+                {% for i in "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"|make_list %}
+                    {% with seed=user.username|add:i|add:"avatar" %}
+                    <div class="cursor-pointer group relative" onclick="selectAvatar('{{ seed }}')">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ seed }}" 
+                             alt="Avatar {{ seed }}" 
+                             class="w-full rounded-xl border-2 border-gray-200 group-hover:border-[#0067b1] transition-all shadow-sm">
+                        <div class="absolute inset-0 bg-[#0067b1]/0 group-hover:bg-[#0067b1]/10 rounded-xl transition-all"></div>
+                    </div>
+                    {% endwith %}
+                {% endfor %}
+                {% for i in "0123456789"|make_list %}
+                    {% with seed=user.username|add:"netapp"|add:i %}
+                    <div class="cursor-pointer group relative" onclick="selectAvatar('{{ seed }}')">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ seed }}" 
+                             alt="Avatar {{ seed }}" 
+                             class="w-full rounded-xl border-2 border-gray-200 group-hover:border-[#0067b1] transition-all shadow-sm">
+                        <div class="absolute inset-0 bg-[#0067b1]/0 group-hover:bg-[#0067b1]/10 rounded-xl transition-all"></div>
+                    </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+            <div class="flex gap-3 justify-end pt-4 border-t border-gray-100">
+                <button onclick="closeAvatarModal()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        function openAvatarModal() {
+            document.getElementById('avatarModal').classList.remove('hidden');
+        }
+        
+        function closeAvatarModal(event) {
+            if (event && event.target !== event.currentTarget && !event.target.closest('.bg-white')) {
+                return;
+            }
+            document.getElementById('avatarModal').classList.add('hidden');
+        }
+        
+        function selectAvatar(seed) {
+            const csrftoken = getCookie('csrftoken');
+            fetch('/ajax/update-avatar/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ seed: seed })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('아바타 업데이트에 실패했습니다: ' + (data.error || '알 수 없는 오류'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('아바타 업데이트 중 오류가 발생했습니다.');
+            });
+        }
+    </script>
 
     <main class="flex-1 flex flex-col min-w-0">
         <div class="flex-1 overflow-y-auto">
