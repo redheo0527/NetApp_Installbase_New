@@ -76,13 +76,45 @@
                     </div>
                     <div>
                         <p class="text-xs font-bold text-gray-400 uppercase mb-2">이슈 진행자</p>
-                        <p class="text-lg font-semibold text-gray-800">
+                        <div class="flex items-center gap-3">
                             {% if issue.assigned_engineer %}
-                                {{ issue.assigned_engineer.last_name }}{{ issue.assigned_engineer.first_name|default:issue.assigned_engineer.username }}
+                                {% with engineer_profile=issue.assigned_engineer.profile|default:None %}
+                                {% if engineer_profile %}
+                                    {% with rank_data=engineer_profile.get_rank_data %}
+                                    <div class="avatar-container relative">
+                                        {% if engineer_profile.avatar_seed %}
+                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ engineer_profile.avatar_seed }}" 
+                                                 alt="Avatar" 
+                                                 class="w-10 h-10 rounded-xl border-2 transition-all shadow-md relative z-10"
+                                                 style="border-color: {{ rank_data.border_color }};">
+                                        {% else %}
+                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ issue.assigned_engineer.username }}" 
+                                                 alt="Avatar" 
+                                                 class="w-10 h-10 rounded-xl border-2 transition-all shadow-md relative z-10"
+                                                 style="border-color: {{ rank_data.border_color }};">
+                                        {% endif %}
+                                        {% if rank_data.glow_opacity != '0' %}
+                                        <div class="avatar-glow {{ rank_data.glow_color }} {{ rank_data.animation }}"
+                                             style="opacity: 0.{{ rank_data.glow_opacity }}; filter: blur(5px);"></div>
+                                        {% endif %}
+                                        {% if rank_data.badge %}
+                                        <div class="avatar-badge text-[10px]">{{ rank_data.badge }}</div>
+                                        {% endif %}
+                                    </div>
+                                    {% endwith %}
+                                {% else %}
+                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ issue.assigned_engineer.username }}" 
+                                         alt="Avatar" 
+                                         class="w-10 h-10 rounded-xl border-2 border-gray-200 transition-all shadow-md">
+                                {% endif %}
+                                {% endwith %}
+                                <p class="text-lg font-semibold text-gray-800">
+                                    {{ issue.assigned_engineer.last_name }}{{ issue.assigned_engineer.first_name|default:issue.assigned_engineer.username }}
+                                </p>
                             {% else %}
-                                -
+                                <p class="text-lg font-semibold text-gray-800">-</p>
                             {% endif %}
-                        </p>
+                        </div>
                     </div>
                 </div>
                 

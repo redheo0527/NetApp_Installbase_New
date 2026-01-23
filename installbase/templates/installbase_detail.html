@@ -407,7 +407,36 @@
                 <div class="flex flex-wrap gap-2">
                     {% for engineer in installbase.assigned_engineers.all %}
                         <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
-                            <div class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold">{{ engineer.username|slice:":1"|upper }}</div>
+                            {% with engineer_profile=engineer.profile|default:None %}
+                            {% if engineer_profile %}
+                                {% with rank_data=engineer_profile.get_rank_data %}
+                                <div class="avatar-container relative">
+                                    {% if engineer_profile.avatar_seed %}
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ engineer_profile.avatar_seed }}" 
+                                             alt="Avatar" 
+                                             class="w-8 h-8 rounded-xl border-2 transition-all shadow-md relative z-10"
+                                             style="border-color: {{ rank_data.border_color }};">
+                                    {% else %}
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ engineer.username }}" 
+                                             alt="Avatar" 
+                                             class="w-8 h-8 rounded-xl border-2 transition-all shadow-md relative z-10"
+                                             style="border-color: {{ rank_data.border_color }};">
+                                    {% endif %}
+                                    {% if rank_data.glow_opacity != '0' %}
+                                    <div class="avatar-glow {{ rank_data.glow_color }} {{ rank_data.animation }}"
+                                         style="opacity: 0.{{ rank_data.glow_opacity }}; filter: blur(4px);"></div>
+                                    {% endif %}
+                                    {% if rank_data.badge %}
+                                    <div class="avatar-badge text-[8px]">{{ rank_data.badge }}</div>
+                                    {% endif %}
+                                </div>
+                                {% endwith %}
+                            {% else %}
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ engineer.username }}" 
+                                     alt="Avatar" 
+                                     class="w-8 h-8 rounded-xl border-2 border-gray-200 transition-all shadow-md">
+                            {% endif %}
+                            {% endwith %}
                             <span class="text-xs font-bold text-gray-700">{{ engineer.last_name }}{{ engineer.first_name }}</span>
                         </div>
                     {% empty %}<p class="text-xs text-gray-400 italic">지정된 엔지니어가 없습니다.</p>{% endfor %}
@@ -765,12 +794,28 @@
                     </h4>
                     <div class="flex flex-wrap gap-2">
                         ${node.assigned_engineers && node.assigned_engineers.length > 0 ? 
-                            node.assigned_engineers.map(e => `
+                            node.assigned_engineers.map(e => {
+                                const avatarSeed = e.avatar_seed || e.username || '';
+                                const rankData = e.rank_data || { border_color: '#e2e8f0', glow_opacity: '0', glow_color: '', animation: '', badge: '' };
+                                return `
                                 <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
-                                    <div class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold">${(e.username || '').charAt(0).toUpperCase()}</div>
+                                    <div class="avatar-container relative">
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}" 
+                                             alt="Avatar" 
+                                             class="w-8 h-8 rounded-xl border-2 transition-all shadow-md relative z-10"
+                                             style="border-color: ${rankData.border_color || '#e2e8f0'};">
+                                        ${rankData.glow_opacity && rankData.glow_opacity != '0' ? `
+                                        <div class="avatar-glow ${rankData.glow_color || ''} ${rankData.animation || ''}"
+                                             style="opacity: 0.${rankData.glow_opacity}; filter: blur(4px);"></div>
+                                        ` : ''}
+                                        ${rankData.badge ? `
+                                        <div class="avatar-badge text-[8px]">${rankData.badge}</div>
+                                        ` : ''}
+                                    </div>
                                     <span class="text-xs font-bold text-gray-700">${e.last_name || ''}${e.first_name || ''}</span>
                                 </div>
-                            `).join('') : 
+                            `;
+                            }).join('') : 
                             '<p class="text-xs text-gray-400 italic">지정된 엔지니어가 없습니다.</p>'
                         }
                     </div>

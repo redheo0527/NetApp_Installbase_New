@@ -341,7 +341,7 @@ def installbase_detail(request, pk):
             'customer', 'product', 'cluster_switch', 
             'cluster_switch__switch_model_1', 'cluster_switch__switch_model_2',
             'fabric_pool_switch', 'fabric_pool_switch__switch_model_1', 'fabric_pool_switch__switch_model_2'
-        ).prefetch_related('assigned_engineers'),
+        ).prefetch_related('assigned_engineers', 'assigned_engineers__profile'),
         pk=pk
     )
     
@@ -357,7 +357,7 @@ def installbase_detail(request, pk):
             'product', 'customer', 'cluster_switch', 
             'cluster_switch__switch_model_1', 'cluster_switch__switch_model_2',
             'fabric_pool_switch', 'fabric_pool_switch__switch_model_1', 'fabric_pool_switch__switch_model_2'
-        ).prefetch_related('assigned_engineers').annotate(
+        ).prefetch_related('assigned_engineers', 'assigned_engineers__profile').annotate(
             # node_number_1이 None인 경우 999로 처리하여 뒤로 보냄
             sort_node_1=Case(
                 When(node_number_1__isnull=True, then=999),
@@ -475,7 +475,15 @@ def installbase_detail(request, pk):
                 'contract_end_date': node.contract_end_date.strftime('%Y-%m-%d') if node.contract_end_date else '',
                 'maintenance_start': node.maintenance_start.strftime('%Y-%m-%d') if node.maintenance_start else '',
                 'maintenance_end': node.maintenance_end.strftime('%Y-%m-%d') if node.maintenance_end else '',
-                'assigned_engineers': [{'username': e.username, 'last_name': e.last_name or '', 'first_name': e.first_name or ''} for e in node.assigned_engineers.all()],
+                'assigned_engineers': [
+                    {
+                        'username': e.username, 
+                        'last_name': e.last_name or '', 
+                        'first_name': e.first_name or '',
+                        'avatar_seed': getattr(e.profile, 'avatar_seed', None) or e.username if hasattr(e, 'profile') and e.profile else e.username,
+                        'rank_data': e.profile.get_rank_data() if hasattr(e, 'profile') and e.profile else {'border_color': '#e2e8f0', 'glow_opacity': '0', 'glow_color': '', 'animation': '', 'badge': ''}
+                    } for e in node.assigned_engineers.all()
+                ],
             })
     
     context = {
@@ -1275,7 +1283,10 @@ def issue_create(request):
 @login_required
 def issue_detail(request, pk):
     """이슈 상세"""
-    issue = get_object_or_404(Issue, pk=pk)
+    issue = get_object_or_404(
+        Issue.objects.select_related('assigned_engineer', 'assigned_engineer__profile'),
+        pk=pk
+    )
     rmas = RMA.objects.filter(case_number=issue, deleted_at__isnull=True).order_by('-created_at')
     
     return render(request, 'issue_detail.html', {
