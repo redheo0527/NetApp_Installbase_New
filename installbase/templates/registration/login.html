@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* 1. Shake 애니메이션 정의 */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+        20%, 40%, 60%, 80% { transform: translateX(10px); }
+    }
+
+    .shake-effect {
+        animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        border: 2px solid #ef4444 !important; /* 실패 시 테두리를 붉게 */
+    }
+
+    /* 기존 디자인 스타일들 (생략 없이 유지) */
+    @keyframes login-appear { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    .login-container { min-height: calc(100vh - 200px); display: flex; align-items: center; justify-content: center; }
+    .login-card { background: white; width: 100%; max-width: 450px; padding: 3rem; border-radius: 2.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08); border: 1px solid #f3f4f6; animation: login-appear 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+    /* ... (기존 input-group, login-btn 스타일들 그대로 유지) ... */
+</style>
+
+<div class="login-container">
+    <div class="login-card {% if form.errors %}shake-effect{% endif %}" id="loginCard">
+        <div class="brand-logo bg-[#0067B3] w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-blue-100">
+            <i class="fa-solid fa-database text-white text-2xl"></i>
+        </div>
+        
+        <div class="text-center mb-10">
+            <h1 class="text-2xl font-black text-gray-900 mb-1 text-center">NetApp Storage</h1>
+            <h2 class="text-xl font-bold text-[#0067B3] mb-2 text-center">InstallBase</h2>
+            {% if form.errors %}
+                <p class="text-red-500 font-bold animate-pulse mt-4">아이디 또는 비밀번호가 틀렸습니다.</p>
+            {% else %}
+                <p class="text-gray-400 font-medium mt-4">인벤토리 관리를 위해 로그인하세요.</p>
+            {% endif %}
+        </div>
+
+        <form method="post" id="loginForm">
+            {% csrf_token %}
+            <div class="input-group relative mb-4">
+                <input type="text" name="username" placeholder="아이디" class="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition-all" required>
+                <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+            
+            <div class="input-group relative mb-6">
+                <input type="password" name="password" placeholder="비밀번호" class="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition-all" required>
+                <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+
+            <button type="submit" class="w-full py-4 bg-gradient-to-r from-[#0067B3] to-[#004e89] text-white rounded-2xl font-black shadow-xl hover:-translate-y-1 transition-all mb-4">
+                시스템 접속하기
+            </button>
+            
+            <div class="text-center">
+                <a href="{% url 'signup' %}" class="text-sm text-[#0067B3] font-bold hover:underline">
+                    <i class="fa-solid fa-user-plus mr-1"></i>회원 가입
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 로그인 버튼 클릭 시 (성공 가정 시나리오)
+    document.getElementById('loginForm').onsubmit = function() {
+        // 성공 시에는 카드가 작아지며 사라지는 애니메이션 (이전 대화 내용 반영)
+        const card = document.getElementById('loginCard');
+        card.classList.remove('shake-effect'); // 혹시 남아있을 실패 효과 제거
+        card.style.transition = "all 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
+        card.style.opacity = "0";
+        card.style.transform = "scale(0.9) translateY(-20px)";
+    };
+</script>
+{% endblock %}

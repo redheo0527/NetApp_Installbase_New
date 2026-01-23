@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-12 px-6">
+    <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800">삭제된 RMA 목록</h2>
+            <p class="text-gray-400 mt-1">삭제 처리된 RMA 리스트입니다.</p>
+        </div>
+        
+        <div class="flex gap-3">
+            <a href="{% url 'rma_list' %}" class="px-6 py-3 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition text-sm">
+                <i class="fa-solid fa-arrow-left mr-2"></i>일반 목록으로
+            </a>
+            <form method="get" class="relative w-full md:w-96">
+                <input type="text" name="q" value="{{ query }}" placeholder="RMA 번호, 파트 넘버, 케이스 번호 검색..." 
+                       class="w-full pl-12 pr-4 py-3 rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-[#0067B3] bg-white">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-4 text-gray-300"></i>
+            </form>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-50 overflow-hidden">
+        <div class="p-8 border-b border-gray-50 flex justify-between items-center">
+            <div class="flex gap-2 items-center">
+                <span class="px-4 py-1.5 bg-red-50 text-red-600 rounded-xl text-xs font-bold">삭제된 RMA {{ page_obj.paginator.count|default:rmas.count }}</span>
+                <span class="px-4 py-1.5 bg-gray-50 text-gray-400 rounded-xl text-xs font-bold">삭제일시 순</span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-gray-400 text-xs uppercase tracking-widest bg-gray-50/50">
+                        <th class="px-8 py-4 font-semibold">케이스 번호</th>
+                        <th class="px-8 py-4 font-semibold">RMA 번호</th>
+                        <th class="px-8 py-4 font-semibold">파트 넘버</th>
+                        <th class="px-8 py-4 font-semibold">삭제일시</th>
+                        <th class="px-8 py-4 font-semibold text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for rma in rmas %}
+                    <tr class="hover:bg-red-50/20 transition-colors group opacity-75">
+                        <td class="px-8 py-6">
+                            <div class="font-semibold text-gray-600">
+                                {{ rma.case_number.case_number|default:"-" }}
+                            </div>
+                        </td>
+                        <td class="px-8 py-6">
+                            <div class="font-semibold text-gray-600 font-mono">
+                                {{ rma.rma_number }}
+                            </div>
+                        </td>
+                        <td class="px-8 py-6">
+                            <div class="font-semibold text-gray-600 font-mono">
+                                {{ rma.part.part_number }}
+                            </div>
+                        </td>
+                        <td class="px-8 py-6">
+                            <span class="text-sm text-gray-500">{{ rma.deleted_at|date:"Y-m-d H:i" }}</span>
+                        </td>
+                        <td class="px-8 py-6 text-right">
+                            <form method="POST" action="{% url 'rma_restore' rma.pk %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" 
+                                        class="inline-flex items-center justify-center w-10 h-10 bg-gray-100 text-gray-400 rounded-xl group-hover:bg-green-500 group-hover:text-white transition-all shadow-sm"
+                                        title="삭제 취소"
+                                        onclick="return confirm('정말로 이 RMA의 삭제를 취소하시겠습니까?');">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-20 text-center text-gray-400">
+                            <i class="fa-solid fa-inbox text-4xl mb-4 block"></i>
+                            삭제된 RMA가 없습니다.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if is_paginated %}
+        <div class="pagination-container">
+            {% if page_obj.has_previous %}
+                <a href="#" onclick="goToPage(1); return false;" class="page-link">처음</a>
+                <a href="#" onclick="goToPage({{ page_obj.previous_page_number }}); return false;" class="page-link">이전</a>
+            {% else %}
+                <span class="page-link disabled">처음</span>
+                <span class="page-link disabled">이전</span>
+            {% endif %}
+
+            {# 첫 페이지 #}
+            {% if page_obj.number == 1 %}
+                <span class="page-link active">1</span>
+            {% else %}
+                <a href="#" onclick="goToPage(1); return false;" class="page-link">1</a>
+            {% endif %}
+
+            {# 첫 페이지와 현재 페이지 범위 사이에 간격이 있으면 "..." 표시 #}
+            {% if page_obj.number > 4 %}
+                <span class="page-link" style="cursor: default; border: none; background: transparent; color: #64748b;">...</span>
+            {% endif %}
+
+            {# 현재 페이지 ±2 범위 표시 #}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num > 1 and num < page_obj.paginator.num_pages %}
+                    {% if num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                        {% if page_obj.number == num %}
+                            <span class="page-link active">{{ num }}</span>
+                        {% else %}
+                            <a href="#" onclick="goToPage({{ num }}); return false;" class="page-link">{{ num }}</a>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+
+            {# 현재 페이지 범위와 마지막 페이지 사이에 간격이 있으면 "..." 표시 #}
+            {% if page_obj.number < page_obj.paginator.num_pages|add:'-3' %}
+                <span class="page-link" style="cursor: default; border: none; background: transparent; color: #64748b;">...</span>
+            {% endif %}
+
+            {# 마지막 페이지 #}
+            {% if page_obj.paginator.num_pages > 1 %}
+                {% if page_obj.number == page_obj.paginator.num_pages %}
+                    <span class="page-link active">{{ page_obj.paginator.num_pages }}</span>
+                {% else %}
+                    <a href="#" onclick="goToPage({{ page_obj.paginator.num_pages }}); return false;" class="page-link">{{ page_obj.paginator.num_pages }}</a>
+                {% endif %}
+            {% endif %}
+
+            {% if page_obj.has_next %}
+                <a href="#" onclick="goToPage({{ page_obj.next_page_number }}); return false;" class="page-link">다음</a>
+                <a href="#" onclick="goToPage({{ page_obj.paginator.num_pages }}); return false;" class="page-link">마지막</a>
+            {% else %}
+                <span class="page-link disabled">다음</span>
+                <span class="page-link disabled">마지막</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .pagination-container {
+        display: flex; justify-content: center; align-items: center; 
+        gap: 0.5rem; margin-top: 2rem; padding-bottom: 2rem;
+    }
+    .page-link {
+        padding: 0.5rem 1rem; border-radius: 0.75rem; background: white; 
+        border: 1px solid #e2e8f0; color: #64748b; font-weight: 700; font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+    .page-link:hover { background: #f8fafc; color: #0067B3; border-color: #0067B3; }
+    .page-link.active { background: #0067B3; color: white; border-color: #0067B3; }
+    .page-link.disabled { opacity: 0.5; cursor: not-allowed; }
+</style>
+
+<script>
+    function goToPage(pageNum) {
+        const params = new URLSearchParams();
+        const queryParam = document.querySelector('input[name="q"]').value.trim();
+        if (queryParam) {
+            params.set('q', queryParam);
+        }
+        params.set('page', pageNum);
+        window.location.href = '?' + params.toString();
+    }
+    
+    document.querySelector('input[name="q"]').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            goToPage(1);
+        }
+    });
+</script>
+{% endblock %}

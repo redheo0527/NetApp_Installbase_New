@@ -1,0 +1,456 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+    body { font-family: 'Noto Sans KR', sans-serif; }
+    .issue-form-container { font-family: 'Noto Sans KR', sans-serif; }
+    .issue-form-container input[type="text"],
+    .issue-form-container input[type="date"],
+    .issue-form-container select,
+    .issue-form-container textarea {
+        font-family: 'Noto Sans KR', sans-serif;
+    }
+</style>
+<script>
+    document.querySelectorAll('input[type="date"]').forEach(input => {
+        input.setAttribute('max', '9999-12-31');
+    });
+</script>
+<div class="max-w-6xl mx-auto py-12 px-6 issue-form-container">
+    <div class="mb-10">
+        <h2 class="text-3xl font-black text-gray-900 tracking-tight" style="font-family: 'Noto Sans KR', sans-serif;">이슈 등록</h2>
+        <p class="text-gray-400 mt-2 font-medium" style="font-family: 'Noto Sans KR', sans-serif;">새로운 이슈를 등록합니다.</p>
+    </div>
+
+    <form method="post" class="space-y-8" onsubmit="return validateIssueForm(event)">
+        {% csrf_token %}
+        
+        <div class="bg-gradient-to-br from-white to-orange-50/30 rounded-[2.5rem] p-10 shadow-lg border border-orange-100">
+            <h3 class="text-xl font-bold text-gray-800 mb-8 border-b-2 border-orange-200 pb-4 flex items-center gap-3" style="font-family: 'Noto Sans KR', sans-serif;">
+                <i class="fa-solid fa-exclamation-triangle text-orange-500 text-2xl"></i> 
+                <span>이슈 정보</span>
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 mb-2">대상 클러스터</label>
+                    <div class="flex gap-3">
+                        <input type="text" id="target_cluster_display" readonly
+                               class="flex-1 p-4 rounded-2xl border-gray-100 bg-gray-50 text-sm"
+                               placeholder="클러스터를 선택하세요">
+                        <input type="hidden" id="id_target_cluster" name="target_cluster">
+                        <button type="button" onclick="openClusterModal()" class="px-4 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition text-sm whitespace-nowrap">
+                            <i class="fa-solid fa-search mr-2"></i>검색
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 mb-2">대상 노드</label>
+                    <div class="flex gap-3">
+                        <input type="text" id="target_node_display" readonly
+                               class="flex-1 p-4 rounded-2xl border-gray-100 bg-gray-50 text-sm"
+                               placeholder="클러스터를 먼저 선택하세요" disabled>
+                        <input type="hidden" id="id_target_node" name="target_node">
+                        <input type="hidden" id="id_target_node_number" name="target_node_number" value="">
+                        <button type="button" id="nodeSearchBtn" onclick="openNodeModal()" 
+                                class="px-4 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition text-sm whitespace-nowrap" disabled>
+                            <i class="fa-solid fa-search mr-2"></i>검색
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 타입</label>
+                    <select name="issue_type" id="id_issue_type" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">
+                        {% for value, label in form.issue_type.field.choices %}
+                        <option value="{{ value }}" {% if form.issue_type.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 발생 일자</label>
+                    <input type="date" name="issue_date" id="id_issue_date" value="{{ form.issue_date.value|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm"
+                           max="9999-12-31" required>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">진행 상태</label>
+                    <select name="status" id="id_status" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">
+                        {% for value, label in form.status.field.choices %}
+                        <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 종료일</label>
+                    <input type="date" name="end_date" id="id_end_date" value="{{ form.end_date.value|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm"
+                           max="9999-12-31">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">케이스 번호</label>
+                    <input type="text" name="case_number" id="id_case_number" value="{{ form.case_number.value|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 진행자</label>
+                    <select name="assigned_engineer" id="id_assigned_engineer" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">
+                        <option value="">선택하세요</option>
+                        {% for value, label in form.assigned_engineer.field.choices %}
+                        <option value="{{ value }}" {% if form.assigned_engineer.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 제목</label>
+                    <input type="text" name="title" id="id_title" value="{{ form.title.value|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 내용</label>
+                    <textarea name="content" id="id_content" rows="4" 
+                              class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">{{ form.content.value|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex justify-end gap-3 mt-8">
+            <a href="{% url 'issue_list' %}" class="px-8 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition shadow-md" style="font-family: 'Noto Sans KR', sans-serif;">
+                취소
+            </a>
+            <button type="submit" class="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-bold hover:from-orange-600 hover:to-orange-700 transition shadow-lg transform hover:scale-105" style="font-family: 'Noto Sans KR', sans-serif;">
+                등록
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- 클러스터 선택 모달 -->
+<div id="clusterModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">클러스터 선택</h3>
+            <button onclick="closeClusterModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        
+        <div class="mb-4">
+            <input type="text" id="clusterSearch" placeholder="클러스터 이름 검색..." 
+                   class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500"
+                   oninput="handleClusterSearch()">
+        </div>
+        
+        <div id="clusterList" class="space-y-3">
+            <!-- 동적으로 로드됨 -->
+        </div>
+        
+        <div id="clusterPagination" class="mt-6 flex justify-center items-center gap-2">
+            <!-- 페이지네이션 버튼 -->
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeClusterModal()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition">닫기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 노드 선택 모달 -->
+<div id="nodeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">노드 선택</h3>
+            <button onclick="closeNodeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        
+        <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-2">선택된 클러스터: <span id="selectedClusterName" class="font-bold text-blue-600"></span></p>
+            <input type="text" id="nodeSearch" placeholder="노드 이름, 시리얼 번호 검색..." 
+                   class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div id="nodeList" class="space-y-3">
+            <!-- 동적으로 로드됨 -->
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeNodeModal()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition">닫기</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedClusterId = null;
+    let selectedClusterName = '';
+    let currentClusterPage = 1;
+    let clusterSearchTimeout = null;
+    
+    // 클러스터 모달
+    function openClusterModal() {
+        document.getElementById('clusterModal').classList.remove('hidden');
+        document.getElementById('clusterSearch').value = '';
+        currentClusterPage = 1;
+        loadClusterList();
+    }
+    
+    function closeClusterModal() {
+        document.getElementById('clusterModal').classList.add('hidden');
+        document.getElementById('clusterSearch').value = '';
+        currentClusterPage = 1;
+    }
+    
+    function handleClusterSearch() {
+        // 디바운싱: 입력이 멈춘 후 300ms 후에 검색 실행
+        clearTimeout(clusterSearchTimeout);
+        clusterSearchTimeout = setTimeout(() => {
+            currentClusterPage = 1;
+            loadClusterList();
+        }, 300);
+    }
+    
+    function loadClusterList(page = null) {
+        if (page !== null) {
+            currentClusterPage = page;
+        }
+        const search = document.getElementById('clusterSearch').value.trim();
+        fetch(`/ajax/get-clusters/?q=${encodeURIComponent(search)}&page=${currentClusterPage}`)
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById('clusterList');
+                let html = '';
+                
+                if (data.clusters && data.clusters.length > 0) {
+                    data.clusters.forEach(cluster => {
+                        html += `
+                            <div class="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-300 transition cursor-pointer" 
+                                 onclick="selectCluster(${cluster.id}, '${cluster.cluster_name.replace(/'/g, "\\'")}')">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-gray-800">${cluster.cluster_name}</div>
+                                        <div class="text-sm text-gray-500 mt-1">
+                                            ${cluster.serial_count}-Node Cluster
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-arrow-right text-blue-400"></i>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = '<div class="text-center py-8 text-gray-400">검색 결과가 없습니다.</div>';
+                }
+                
+                list.innerHTML = html;
+                
+                // 페이지네이션 UI 업데이트
+                updateClusterPagination(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+    
+    function updateClusterPagination(data) {
+        const pagination = document.getElementById('clusterPagination');
+        let html = '';
+        
+        if (data.total_count > 0) {
+            const totalPages = Math.ceil(data.total_count / data.per_page);
+            
+            // 이전 버튼
+            if (data.has_prev) {
+                html += `<button onclick="loadClusterList(${data.page - 1})" class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-bold hover:bg-gray-200 transition">이전</button>`;
+            }
+            
+            // 페이지 번호 표시
+            html += `<span class="px-3 py-1.5 text-sm text-gray-600">페이지 ${data.page} / ${totalPages} (총 ${data.total_count}개)</span>`;
+            
+            // 다음 버튼
+            if (data.has_next) {
+                html += `<button onclick="loadClusterList(${data.page + 1})" class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-bold hover:bg-gray-200 transition">다음</button>`;
+            }
+        }
+        
+        pagination.innerHTML = html;
+    }
+    
+    function selectCluster(clusterId, clusterName) {
+        selectedClusterId = clusterId;
+        selectedClusterName = clusterName;
+        document.getElementById('id_target_cluster').value = clusterId;
+        document.getElementById('target_cluster_display').value = clusterName;
+        
+        // 노드 선택 필드 활성화
+        document.getElementById('target_node_display').disabled = false;
+        document.getElementById('target_node_display').placeholder = '노드를 선택하세요';
+        document.getElementById('nodeSearchBtn').disabled = false;
+        
+        // 기존 노드 선택 초기화
+        document.getElementById('id_target_node').value = '';
+        document.getElementById('target_node_display').value = '';
+        
+        closeClusterModal();
+    }
+    
+    // 노드 모달
+    function openNodeModal() {
+        if (!selectedClusterId) {
+            alert('먼저 클러스터를 선택해주세요.');
+            return;
+        }
+        document.getElementById('nodeModal').classList.remove('hidden');
+        document.getElementById('selectedClusterName').textContent = selectedClusterName;
+        loadNodeList();
+    }
+    
+    function closeNodeModal() {
+        document.getElementById('nodeModal').classList.add('hidden');
+    }
+    
+    function loadNodeList() {
+        if (!selectedClusterId) return;
+        
+        const search = document.getElementById('nodeSearch').value;
+        fetch(`/ajax/get-nodes-by-cluster/?cluster_id=${selectedClusterId}&q=${encodeURIComponent(search)}`)
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById('nodeList');
+                let html = '';
+                
+                if (data.nodes && data.nodes.length > 0) {
+                    data.nodes.forEach(node => {
+                        const serialNumber = node.serial_number || '';
+                        const nodeName = node.node_name || '';
+                        const nodeNumber = node.node_number || 1;
+                        const displayText = nodeName ? 
+                            `${nodeName} (SN: ${serialNumber})` : 
+                            `SN: ${serialNumber}`;
+                        html += `
+                            <div class="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-300 transition cursor-pointer" 
+                                 onclick="selectNode(${node.id}, '${nodeName.replace(/'/g, "\\'")}', ${nodeNumber}, '${serialNumber.replace(/'/g, "\\'")}')">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-gray-800">${nodeName || '노드 이름 없음'}</div>
+                                        <div class="text-sm text-gray-500 mt-1">
+                                            SN: ${serialNumber} (Node ${nodeNumber})
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-arrow-right text-blue-400"></i>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = '<div class="text-center py-8 text-gray-400">검색 결과가 없습니다.</div>';
+                }
+                
+                list.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+    
+    function selectNode(nodeId, nodeName, nodeNumber, serialNumber) {
+        document.getElementById('id_target_node').value = nodeId;
+        // 노드 이름과 시리얼 번호 함께 표시
+        const displayText = nodeName ? 
+            `${nodeName} (SN: ${serialNumber})` : 
+            `SN: ${serialNumber}`;
+        document.getElementById('target_node_display').value = displayText;
+        // 노드 번호도 저장
+        const nodeNumberInput = document.getElementById('id_target_node_number');
+        if (nodeNumberInput) {
+            nodeNumberInput.value = nodeNumber || 1;
+        }
+        closeNodeModal();
+    }
+    
+    // 이벤트 리스너
+    document.getElementById('clusterSearch').addEventListener('input', function() {
+        loadClusterList();
+    });
+    
+    document.getElementById('nodeSearch').addEventListener('input', function() {
+        loadNodeList();
+    });
+    
+    document.getElementById('clusterModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeClusterModal();
+        }
+    });
+    
+    document.getElementById('nodeModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeNodeModal();
+        }
+    });
+    
+    // 초기 로드 시 target_node_id가 있으면 클러스터만 자동 선택 (노드는 선택하지 않음)
+    {% if request.GET.target_node %}
+    const targetNodeId = {{ request.GET.target_node }};
+    fetch(`/api/get-node-info/?node_id=${targetNodeId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.node) {
+                // 클러스터만 자동 선택
+                selectedClusterId = data.node.cluster_id;
+                selectedClusterName = data.node.cluster_name;
+                document.getElementById('id_target_cluster').value = data.node.cluster_id;
+                document.getElementById('target_cluster_display').value = data.node.cluster_name;
+                
+                // 노드 필드는 활성화만 하고 값은 비워둠
+                document.getElementById('target_node_display').disabled = false;
+                document.getElementById('target_node_display').placeholder = '노드를 선택하세요';
+                document.getElementById('nodeSearchBtn').disabled = false;
+                
+                // 노드 값은 초기화
+                document.getElementById('id_target_node').value = '';
+                document.getElementById('target_node_display').value = '';
+                document.getElementById('id_target_node_number').value = '';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    {% endif %}
+		    document.querySelectorAll('input[type="date"]').forEach(input => {
+    input.setAttribute('max', '9999-12-31');
+});
+
+// 필수 필드 검증
+function validateIssueForm(event) {
+    const requiredFields = [
+        { id: 'id_issue_type', name: '이슈 타입' },
+        { id: 'id_issue_date', name: '이슈 발생 일자' },
+        { id: 'id_title', name: '이슈 제목' },
+        { id: 'id_content', name: '이슈 내용' }
+    ];
+    
+    const missingFields = [];
+    
+    for (const field of requiredFields) {
+        const element = document.getElementById(field.id);
+        if (!element || !element.value || element.value.trim() === '') {
+            missingFields.push(field.name);
+        }
+    }
+    
+    if (missingFields.length > 0) {
+        event.preventDefault();
+        alert('다음 필수 항목을 입력해주세요:\n\n' + missingFields.join('\n'));
+        return false;
+    }
+    
+    return true;
+}
+</script>
+{% endblock %}

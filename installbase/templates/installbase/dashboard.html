@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-10">
+    <div>
+        <h2 class="text-3xl font-bold text-gray-800">Welcome Back, Engineer</h2>
+        <p class="text-gray-400 mt-1">오늘의 NetApp 인프라 현황을 확인하세요.</p>
+    </div>
+    <div class="relative w-96">
+        <input type="text" placeholder="고객사 또는 SN 검색..." class="w-full pl-12 pr-4 py-3 rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-[#0067B3]">
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-4 text-gray-300"></i>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50">
+        <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-[#0067B3] mb-4">
+            <i class="fa-solid fa-box"></i>
+        </div>
+        <p class="text-sm font-medium text-gray-400">전체 장비</p>
+        <p class="text-2xl font-bold text-gray-800">{{ total_count }} Sets</p>
+    </div>
+    
+    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50">
+        <div class="w-12 h-12 bg-cyan-50 rounded-2xl flex items-center justify-center text-cyan-500 mb-4">
+            <i class="fa-solid fa-bolt"></i>
+        </div>
+        <p class="text-sm font-medium text-gray-400">AFF 모델</p>
+        <p class="text-2xl font-bold text-gray-800">{{ aff_count }} Sets</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50 border-l-4 border-l-red-400">
+        <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mb-4">
+            <i class="fa-solid fa-calendar-xmark"></i>
+        </div>
+        <p class="text-sm font-medium text-gray-400">백계약 종료 임박</p>
+        <p class="text-2xl font-bold text-red-600">{{ expiring_count }} 건</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50">
+        <div class="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-500 mb-4">
+            <i class="fa-solid fa-check-double"></i>
+        </div>
+        <p class="text-sm font-medium text-gray-400">정기점검 대상</p>
+        <p class="text-2xl font-bold text-gray-800">{{ inspection_count }} 건</p>
+    </div>
+</div>
+
+<div class="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-50">
+    <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-800">최근 설치 및 관리 리스트</h3>
+        <button class="bg-[#0067B3] text-white px-6 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition">
+            <i class="fa-solid fa-plus mr-2"></i> 신규 등록
+        </button>
+    </div>
+
+    <table class="w-full">
+        <thead>
+            <tr class="text-gray-400 text-xs uppercase tracking-wider border-b border-gray-50">
+                <th class="pb-4 font-medium text-left">고객사명 / 프로젝트</th>
+                <th class="pb-4 font-medium text-left">장비 모델</th>
+                <th class="pb-4 font-medium text-center">스위치 연동</th>
+                <th class="pb-4 font-medium text-left">유지보수 종료일</th>
+                <th class="pb-4 font-medium text-right">상세</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+            {% for item in recent_installs %}
+            <tr class="hover:bg-blue-50/30 transition">
+                <td class="py-5">
+                    <p class="font-bold text-gray-800">{{ item.customer }}</p>
+                    <p class="text-xs text-gray-400">{{ item.project }}</p>
+                </td>
+                <td class="py-5">
+                    <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold">{{ item.product.model_name }}</span>
+                </td>
+                <td class="py-5 text-center">
+                    {% if item.is_switch_connected %}
+                        <i class="fa-solid fa-link text-cyan-500" title="연동됨"></i>
+                    {% else %}
+                        <i class="fa-solid fa-link-slash text-gray-300" title="Direct-Connect"></i>
+                    {% endif %}
+                </td>
+                <td class="py-5 text-sm text-gray-600">{{ item.maintenance_end }}</td>
+                <td class="py-5 text-right">
+                    <a href="{% url 'installbase_detail' item.pk %}" class="inline-flex items-center justify-center w-10 h-10 bg-gray-50 text-gray-400 rounded-xl hover:bg-[#0067B3] hover:text-white transition">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

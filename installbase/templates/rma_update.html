@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto py-12 px-6">
+    <div class="mb-10">
+        <h2 class="text-3xl font-black text-gray-900 tracking-tight">RMA 수정</h2>
+        <p class="text-gray-400 mt-2 font-medium">RMA 정보를 수정합니다.</p>
+    </div>
+
+    <form method="post" class="space-y-8" onsubmit="return validateRMAUpdateForm(event)">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fa-solid fa-exclamation-triangle text-red-500"></i>
+                <h4 class="font-bold text-red-700">수정 중 오류가 발생했습니다:</h4>
+            </div>
+            <ul class="list-disc list-inside text-sm text-red-600 space-y-1">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li><strong>{{ field }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-50">
+            <h3 class="text-lg font-bold text-gray-800 mb-8 border-b border-gray-50 pb-4">
+                <i class="fa-solid fa-box text-indigo-500 mr-2"></i> RMA 정보
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 mb-2">케이스 번호</label>
+                    <input type="text" readonly 
+                           value="{% if rma.case_number %}{% if rma.case_number.case_number %}{{ rma.case_number.case_number }} - {{ rma.case_number.title }} - {{ rma.case_number.get_status_display }}{% else %}{{ rma.case_number.title }} - {{ rma.case_number.get_status_display }}{% endif %}{% else %}-{% endif %}"
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 text-sm focus:outline-none cursor-default">
+                    <div style="display: none;">
+                        {{ form.case_number }}
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">RMA 번호</label>
+                    <input type="text" name="rma_number" id="id_rma_number" value="{{ form.rma_number.value|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">파트 넘버</label>
+                    <div class="flex gap-3">
+                        <input type="text" id="part_display" readonly 
+                               value="{% if rma.part %}{{ rma.part.part_number }}{% else %}-{% endif %}"
+                               class="flex-1 p-4 rounded-2xl border-gray-100 bg-gray-50 text-sm focus:outline-none cursor-default">
+                        <input type="hidden" id="id_part" name="part" value="{% if rma.part %}{{ rma.part.id }}{% endif %}">
+                        <button type="button" onclick="openPartModal()" class="px-4 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition text-sm whitespace-nowrap">
+                            <i class="fa-solid fa-search mr-2"></i>검색
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">파트 수량</label>
+                    <input type="number" name="part_quantity" id="id_part_quantity" value="{{ form.part_quantity.value|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">배송 지역</label>
+                    <input type="text" name="delivery_region" id="id_delivery_region" value="{{ form.delivery_region.value|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">배송 일자</label>
+                    <input type="date" name="delivery_date" id="id_delivery_date" value="{{ form.delivery_date.value|date:'Y-m-d'|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm"
+                           max="9999-12-31">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">반납 지역</label>
+                    <input type="text" name="return_region" id="id_return_region" value="{{ form.return_region.value|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">반납 일자</label>
+                    <input type="date" name="return_date" id="id_return_date" value="{{ form.return_date.value|date:'Y-m-d'|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm"
+                           max="9999-12-31">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">지연 배송 여부</label>
+                    <select name="is_delayed" id="id_is_delayed" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                        <option value="normal" {% if rma.is_delayed == 'normal' %}selected{% endif %}>정상배송</option>
+                        <option value="delayed" {% if rma.is_delayed == 'delayed' %}selected{% endif %}>지연배송</option>
+                        <option value="not_delivered" {% if rma.is_delayed == 'not_delivered' %}selected{% endif %}>배송 미완료</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">반납 필요 여부</label>
+                    <select name="return_required" id="id_return_required" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                        <option value="required" {% if rma.return_required == 'required' %}selected{% endif %}>반납 필요</option>
+                        <option value="not_required" {% if rma.return_required == 'not_required' %}selected{% endif %}>반납 불필요</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">반납 여부</label>
+                    <select id="id_return_status" name="return_status" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                        <option value="not_returned" {% if rma.return_status == 'not_returned' %}selected{% endif %}>미반납</option>
+                        <option value="returned" {% if rma.return_status == 'returned' %}selected{% endif %}>반납</option>
+                        <option value="not_required" id="not_required_option" style="display:none;" {% if rma.return_status == 'not_required' %}selected{% endif %}>반납 불필요</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex justify-end gap-3">
+            <a href="{% url 'rma_list' %}" class="px-8 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition">
+                취소
+            </a>
+            <button type="submit" class="px-8 py-3 bg-indigo-500 text-white rounded-xl font-bold hover:bg-indigo-600 transition shadow-lg">
+                수정
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const returnStatusSelect = document.getElementById('id_return_status');
+        const returnRequiredSelect = document.getElementById('id_return_required');
+        const partSelect = document.getElementById('id_part');
+        
+        // 서비스 레벨과 파트 정보
+        const serviceLevel = '{{ service_level|default:"" }}'.toUpperCase().trim();
+        const partCategory = '{{ part_category|default:"" }}';
+        const isNRD = serviceLevel === '4HR_NRD' || serviceLevel.includes('NRD');
+        const isDisk = partCategory === 'disk';
+        
+        // 초기 상태 확인
+        checkReturnStatus();
+        
+        // 반납 여부 변경 시 이벤트 리스너
+        if (returnStatusSelect) {
+            returnStatusSelect.addEventListener('change', function() {
+                checkReturnStatus();
+            });
+        }
+        
+        // 파트 변경 시 이벤트 리스너
+        if (partSelect) {
+            partSelect.addEventListener('change', function() {
+                // 파트 정보를 AJAX로 가져와서 카테고리 확인
+                const partId = this.value;
+                if (partId) {
+                    fetch(`/ajax/get-parts-by-category/?part_id=${partId}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.part && data.part.category) {
+                                checkReturnStatusForPart(data.part.category);
+                            } else {
+                                checkReturnStatus();
+                            }
+                        })
+                        .catch(() => {
+                            checkReturnStatus();
+                        });
+                } else {
+                    checkReturnStatus();
+                }
+            });
+        }
+        
+        function checkReturnStatus() {
+            if (!returnStatusSelect || !returnRequiredSelect) return;
+            
+            const returnStatus = returnStatusSelect.value;
+            
+            if (returnStatus === 'not_required') {
+                // 반납 여부가 "반납 불필요"인 경우
+                returnRequiredSelect.value = 'not_required';
+                returnRequiredSelect.disabled = true;
+                returnRequiredSelect.classList.add('bg-gray-200', 'cursor-not-allowed');
+            } else {
+                // 반납 여부가 "반납 불필요"가 아닌 경우
+                returnRequiredSelect.disabled = false;
+                returnRequiredSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
+            }
+        }
+        
+        function checkReturnStatusForPart(category) {
+            if (!returnStatusSelect || !returnRequiredSelect) return;
+            
+            // 서비스 레벨이 4HR_NRD이고 파트 종류가 disk인 경우
+            const currentIsNRD = serviceLevel === '4HR_NRD' || serviceLevel.includes('NRD');
+            if (category === 'disk' && currentIsNRD) {
+                // "반납 불필요" 옵션 표시
+                const notRequiredOption = returnStatusSelect.querySelector('option[value="not_required"]');
+                if (notRequiredOption) {
+                    notRequiredOption.style.display = 'block';
+                }
+                returnRequiredSelect.value = 'not_required';
+                returnRequiredSelect.disabled = true;
+                returnRequiredSelect.classList.add('bg-gray-200', 'cursor-not-allowed');
+                returnStatusSelect.value = 'not_required';
+                returnStatusSelect.disabled = true;
+                returnStatusSelect.classList.add('bg-gray-200', 'cursor-not-allowed');
+            } else {
+                // "반납 불필요" 옵션 숨기기
+                const notRequiredOption = returnStatusSelect.querySelector('option[value="not_required"]');
+                if (notRequiredOption) {
+                    notRequiredOption.style.display = 'none';
+                }
+                if (returnStatusSelect.value === 'not_required') {
+                    returnStatusSelect.value = 'not_returned';
+                }
+                // 반납 필요 여부를 "반납 필요"로 변경
+                returnRequiredSelect.value = 'required';
+                returnRequiredSelect.disabled = false;
+                returnRequiredSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
+                returnStatusSelect.disabled = false;
+                returnStatusSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
+            }
+        }
+        
+        // 초기 로드 시 체크
+        if (isDisk && isNRD) {
+            checkReturnStatusForPart('disk');
+        } else {
+            // "반납 불필요" 옵션 숨기기
+            const notRequiredOption = returnStatusSelect.querySelector('option[value="not_required"]');
+            if (notRequiredOption) {
+                notRequiredOption.style.display = 'none';
+            }
+        }
+    });
+    
+    function clearPartUpdate() {
+        document.getElementById('id_part').value = '';
+        document.getElementById('part_display').value = '-';
+        // 파트 초기화 후 반납 상태 즉시 확인
+        setTimeout(function() {
+            checkReturnStatus();
+        }, 100);
+    }
+
+    // 필수 필드 검증 (수정 폼용)
+    function validateRMAUpdateForm(event) {
+        const requiredFields = [
+            { id: 'id_rma_number', name: 'RMA 번호' },
+            { id: 'id_part', name: '파트 넘버' },
+            { id: 'id_delivery_region', name: '배송 지역' }
+        ];
+        
+        const missingFields = [];
+        
+        for (const field of requiredFields) {
+            const element = document.getElementById(field.id);
+            if (!element || !element.value || element.value.trim() === '') {
+                missingFields.push(field.name);
+            }
+        }
+        
+        if (missingFields.length > 0) {
+            event.preventDefault();
+            alert('다음 필수 항목을 입력해주세요:\n\n' + missingFields.join('\n'));
+            return false;
+        }
+        
+        return true;
+    }
+</script>
+
+<!-- 파트 선택 모달 -->
+<div id="partModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">파트 선택</h3>
+            <button onclick="closePartModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">파트 종류</label>
+                <select id="partCategory" class="w-full p-3 rounded-xl border border-gray-200" onchange="updatePartType()">
+                    <option value="">선택하세요</option>
+                    <option value="Controller">Controller</option>
+                    <option value="shelf">Shelf</option>
+                    <option value="disk">Disk</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">파트 타입</label>
+                <select id="partType" class="w-full p-3 rounded-xl border border-gray-200" onchange="loadParts()">
+                    <option value="">선택하세요</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">파트 검색</label>
+                <input type="text" id="partSearch" placeholder="파트 넘버 검색 (실시간 검색)..."
+                       class="w-full p-3 rounded-xl border border-gray-200" oninput="loadParts()" autocomplete="off">
+            </div>
+        </div>
+        <div id="partList" class="space-y-3"></div>
+    </div>
+</div>
+
+<script>
+    const partTypeOptions = {
+        Controller: ['chassis', 'controller', 'power', 'nvdimm', 'dimm', 'adapter', 'flash_cache', 'boot_device', 'nvdimm_module', 'nvram_battery', 'cable', 'sfp', 'FAN'],
+        shelf: ['chassis', 'shelf_module', 'shelf_power', 'adapter'],
+        disk: ['nvme', 'nl_sas', 'sas', 'ssd']
+    };
+    const partTypeLabels = {
+        Controller: { 'chassis': 'Chassis', 'controller': '컨트롤러', 'power': 'Power', 'nvdimm': 'NVDIMM', 'dimm': 'DIMM', 'adapter': 'Adapter', 'flash_cache': 'Flash Cache', 'boot_device': 'Boot Device', 'nvdimm_module': 'NVDIMM 모듈', 'nvram_battery': 'NVRAM Battery', 'cable': 'Cable', 'sfp': 'SFP', 'FAN': 'FAN'},
+        shelf: { 'chassis': 'Chassis', 'shelf_module': 'Shelf Module', 'shelf_power': 'Shelf Power', 'adapter': 'Adapter' },
+        disk: { 'nvme': 'NVMe', 'nl_sas': 'NL-SAS', 'sas': 'SAS', 'ssd': 'SSD' }
+    };
+    
+    function openPartModal() {
+        // 파트 검색 모달 열 때 항상 초기화
+        document.getElementById('partCategory').value = '';
+        document.getElementById('partType').innerHTML = '<option value="">선택하세요</option>';
+        document.getElementById('partSearch').value = '';
+        document.getElementById('partList').innerHTML = '';
+        document.getElementById('partModal').classList.remove('hidden');
+        loadParts();
+    }
+    
+    function closePartModal() {
+        document.getElementById('partModal').classList.add('hidden');
+    }
+    
+    function updatePartType() {
+        const category = document.getElementById('partCategory').value;
+        const partTypeSelect = document.getElementById('partType');
+        partTypeSelect.innerHTML = '<option value="">선택하세요</option>';
+        if (category && partTypeOptions[category]) {
+            partTypeOptions[category].forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = partTypeLabels[category][type] || type;
+                partTypeSelect.appendChild(option);
+            });
+        }
+        loadParts();
+    }
+    
+    function loadParts() {
+        const category = document.getElementById('partCategory').value;
+        const partType = document.getElementById('partType').value;
+        const search = document.getElementById('partSearch').value;
+        
+        let url = '/ajax/get-parts-by-category/?';
+        if (category) url += `category=${encodeURIComponent(category)}&`;
+        if (partType) url += `part_type=${encodeURIComponent(partType)}&`;
+        if (search) url += `q=${encodeURIComponent(search)}&`;
+        
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('partList');
+                let html = '';
+                if (data.parts && data.parts.length > 0) {
+                    data.parts.forEach(part => {
+                        html += `
+                            <div class="p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-blue-50"
+                                 onclick="selectPart(${part.id}, '${(part.part_number || '').replace(/'/g, "\\'")}', '${(part.category || '').replace(/'/g, "\\'")}')">
+                                <div class="font-bold text-blue-600">${part.part_number || '-'}</div>
+                                ${part.description ? `<div class="text-xs text-gray-500 mt-1">${part.description}</div>` : ''}
+                                <div class="flex justify-between text-xs text-gray-500 mt-2">
+                                    <span>종류: ${part.category || '-'}</span>
+                                    <span>타입: ${part.part_type || '-'}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = '<div class="text-center py-8 text-gray-400">검색 결과가 없습니다.</div>';
+                }
+                list.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+    
+    function selectPart(id, partNumber, category) {
+        document.getElementById('id_part').value = id;
+        document.getElementById('part_display').value = partNumber;
+        closePartModal();
+        
+        // 파트 변경 시 반납 상태 확인
+        if (typeof checkReturnStatusForPart === 'function') {
+            checkReturnStatusForPart(category);
+        }
+    }
+    
+    document.getElementById('partCategory')?.addEventListener('change', updatePartType);
+    document.getElementById('partType')?.addEventListener('change', loadParts);
+    document.getElementById('partSearch')?.addEventListener('input', loadParts);
+</script>
+<script>
+document.querySelectorAll('input[type="date"]').forEach(input => {
+    input.setAttribute('max', '9999-12-31');
+});
+</script>
+{% endblock %}

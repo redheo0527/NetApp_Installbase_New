@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetApp IB Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* NetApp Color Palette */
+        :root {
+            --netapp-blue: #0067B3;
+            --netapp-cyan: #00DDF4;
+            --bg-light: #F4F7FA;
+        }
+        body { background-color: var(--bg-light); font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="flex">
+    <aside class="w-64 h-screen bg-white border-r border-gray-100 flex-shrink-0 sticky top-0">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold text-[#0067B3]">NetApp <span class="font-light text-gray-400">IB</span></h1>
+        </div>
+        <nav class="mt-6 px-4 space-y-2">
+            <a href="#" class="flex items-center p-3 text-white bg-[#0067B3] rounded-xl shadow-lg shadow-blue-100">
+                <i class="fa-solid fa-chart-pie mr-3"></i> Dashboard
+            </a>
+            <a href="#" class="flex items-center p-3 text-gray-500 hover:bg-blue-50 hover:text-[#0067B3] rounded-xl transition">
+                <i class="fa-solid fa-server mr-3"></i> Install Base
+            </a>
+            <a href="#" class="flex items-center p-3 text-gray-500 hover:bg-blue-50 hover:text-[#0067B3] rounded-xl transition">
+                <i class="fa-solid fa-network-wired mr-3"></i> Cluster Switches
+            </a>
+        </nav>
+    </aside>
+
+    <main class="flex-grow p-10">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

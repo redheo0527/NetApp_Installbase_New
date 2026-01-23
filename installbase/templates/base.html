@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetApp IB Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --netapp-blue: #0067B3;
+            --netapp-cyan: #00DDF4;
+            --bg-light: #F8FAFC;
+        }
+        body { 
+            background-color: var(--bg-light); 
+            font-family: 'Inter', sans-serif; 
+            letter-spacing: -0.02em;
+        }
+        .nav-active {
+            background-color: var(--netapp-blue);
+            color: white !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 103, 179, 0.2);
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+    <aside class="w-72 bg-white border-r border-gray-100 flex-shrink-0 sticky top-0 h-screen flex flex-col">
+        <div class="p-8">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#0067B3] rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-database text-white text-xs"></i>
+                </div>
+                <h1 class="text-xl font-black text-gray-900 tracking-tighter">
+                    NetApp <span class="text-[#0067B3]">IB</span>
+                </h1>
+            </div>
+        </div>
+
+        <nav class="mt-4 px-6 flex-grow space-y-2">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-3 mb-4">Main Menu</p>
+            
+            <a href="{% url 'dashboard' %}" 
+               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'dashboard' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
+                <i class="fa-solid fa-grid-2-wide mr-3 w-5"></i>
+                <span class="font-semibold text-sm">Dashboard</span>
+            </a>
+
+            <a href="{% url 'installbase_list' %}" 
+               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'installbase_list' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
+                <i class="fa-solid fa-server mr-3 w-5"></i>
+                <span class="font-semibold text-sm">Install Base</span>
+            </a>
+
+            <a href="{% url 'clusterswitch_list' %}" 
+               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'clusterswitch_list' or request.resolver_match.url_name == 'clusterswitch_create' or request.resolver_match.url_name == 'clusterswitch_update' or request.resolver_match.url_name == 'clusterswitch_deleted_list' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
+                <i class="fa-solid fa-network-wired mr-3 w-5"></i>
+                <span class="font-semibold text-sm">Switches</span>
+            </a>
+
+            <a href="{% url 'issue_list' %}" 
+               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'issue_list' or request.resolver_match.url_name == 'issue_create' or request.resolver_match.url_name == 'issue_update' or request.resolver_match.url_name == 'issue_detail' or request.resolver_match.url_name == 'issue_deleted_list' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
+                <i class="fa-solid fa-exclamation-triangle mr-3 w-5"></i>
+                <span class="font-semibold text-sm">이슈 관리</span>
+            </a>
+
+            <a href="{% url 'rma_list' %}" 
+               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'rma_list' or request.resolver_match.url_name == 'rma_create' or request.resolver_match.url_name == 'rma_update' or request.resolver_match.url_name == 'rma_deleted_list' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
+                <i class="fa-solid fa-box mr-3 w-5"></i>
+                <span class="font-semibold text-sm">RMA 관리</span>
+            </a>
+            
+            {% if user.is_staff or user.is_superuser %}
+            <a href="{% url 'netapp_api_management' %}" 
+               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'netapp_api_management' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
+                <i class="fa-solid fa-gear mr-3 w-5"></i>
+                <span class="font-semibold text-sm">NetApp API 관리</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="p-6 border-t border-gray-50">
+            <div class="flex items-center gap-3 p-2 bg-gray-50 rounded-2xl">
+                <div class="w-10 h-10 bg-[#0067B3] rounded-xl flex items-center justify-center text-white font-bold">
+                    {{ user.username|first|upper }}
+                </div>
+                <div class="overflow-hidden">
+                    <p class="text-xs font-bold text-gray-800 truncate">{{ user.last_name }}{{ user.first_name }}</p>
+                    <p class="text-[10px] text-gray-400 uppercase">Engineer</p>
+                </div>
+                <a href="/admin/logout/" class="ml-auto text-gray-300 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-grow overflow-y-auto h-screen custom-scrollbar">
+        <div class="max-w-[1400px] mx-auto">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</body>
+</html>

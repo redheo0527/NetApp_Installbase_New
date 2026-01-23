@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+    body { font-family: 'Noto Sans KR', sans-serif; }
+    .issue-form-container { font-family: 'Noto Sans KR', sans-serif; }
+    .issue-form-container input[type="text"],
+    .issue-form-container input[type="date"],
+    .issue-form-container select,
+    .issue-form-container textarea {
+        font-family: 'Noto Sans KR', sans-serif;
+    }
+</style>
+<script>
+    document.querySelectorAll('input[type="date"]').forEach(input => {
+        input.setAttribute('max', '9999-12-31');
+    });
+</script>
+<div class="max-w-6xl mx-auto py-12 px-6 issue-form-container">
+    <div class="mb-10">
+        <h2 class="text-3xl font-black text-gray-900 tracking-tight" style="font-family: 'Noto Sans KR', sans-serif;">이슈 수정</h2>
+        <p class="text-gray-400 mt-2 font-medium" style="font-family: 'Noto Sans KR', sans-serif;">이슈 정보를 수정합니다.</p>
+    </div>
+
+    <form method="post" class="space-y-8" onsubmit="return validateIssueForm(event)">
+        {% csrf_token %}
+        
+        <div class="bg-gradient-to-br from-white to-orange-50/30 rounded-[2.5rem] p-10 shadow-lg border border-orange-100">
+            <h3 class="text-xl font-bold text-gray-800 mb-8 border-b-2 border-orange-200 pb-4 flex items-center gap-3" style="font-family: 'Noto Sans KR', sans-serif;">
+                <i class="fa-solid fa-exclamation-triangle text-orange-500 text-2xl"></i> 
+                <span>이슈 정보</span>
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 mb-2">대상 클러스터</label>
+                    <input type="text" id="target_cluster_display" readonly
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-200 text-sm cursor-not-allowed"
+                           value="{{ issue.target_cluster.cluster_name|default:'' }}" disabled>
+                    <input type="hidden" id="id_target_cluster" name="target_cluster" value="{{ issue.target_cluster.pk|default:'' }}">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 mb-2">대상 노드</label>
+                    <div class="flex gap-3">
+                        <input type="text" id="target_node_display" readonly
+                               class="flex-1 p-4 rounded-2xl border-gray-100 bg-gray-50 text-sm"
+                               value="{% if issue.target_node %}{% if issue.target_node_number == 1 and issue.target_node.node_name_1 %}{{ issue.target_node.node_name_1 }}{% if issue.target_node.serial_number_1 %} (SN: {{ issue.target_node.serial_number_1 }}){% endif %}{% elif issue.target_node_number == 2 and issue.target_node.node_name_2 %}{{ issue.target_node.node_name_2 }}{% if issue.target_node.serial_number_2 %} (SN: {{ issue.target_node.serial_number_2 }}){% endif %}{% else %}{{ issue.target_node.node_name_1|default:'' }}{% if issue.target_node.node_name_1 and issue.target_node.serial_number_1 %} (SN: {{ issue.target_node.serial_number_1 }}){% endif %}{% if issue.target_node.node_name_1 and issue.target_node.node_name_2 %} / {% endif %}{{ issue.target_node.node_name_2|default:'' }}{% if issue.target_node.node_name_2 and issue.target_node.serial_number_2 %} (SN: {{ issue.target_node.serial_number_2 }}){% endif %}{% endif %}{% endif %}">
+                        <input type="hidden" id="id_target_node" name="target_node" value="{{ issue.target_node.pk|default:'' }}">
+                        <input type="hidden" id="id_target_node_number" name="target_node_number" value="{% if issue.target_node_number %}{{ issue.target_node_number }}{% endif %}">
+                        <button type="button" id="nodeSearchBtn" onclick="openNodeModal()" 
+                                class="px-4 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition text-sm whitespace-nowrap"
+                                {% if not issue.target_cluster %}disabled{% endif %}>
+                            <i class="fa-solid fa-search mr-2"></i>검색
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 타입</label>
+                    <select name="issue_type" id="id_issue_type" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">
+                        {% for value, label in form.issue_type.field.choices %}
+                        <option value="{{ value }}" {% if form.issue_type.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 발생 일자</label>
+                    <input type="date" name="issue_date" id="id_issue_date" value="{{ form.issue_date.value|date:'Y-m-d'|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm"
+                           max="9999-12-31" required>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">진행 상태</label>
+                    <select name="status" id="id_status" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">
+                        {% for value, label in form.status.field.choices %}
+                        <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 종료일</label>
+                    <input type="date" name="end_date" id="id_end_date" value="{{ form.end_date.value|date:'Y-m-d'|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm"
+                           max="9999-12-31">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">케이스 번호</label>
+                    <input type="text" name="case_number" id="id_case_number" value="{{ form.case_number.value|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 진행자</label>
+                    <select name="assigned_engineer" id="id_assigned_engineer" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">
+                        <option value="">선택하세요</option>
+                        {% for value, label in form.assigned_engineer.field.choices %}
+                        <option value="{{ value }}" {% if form.assigned_engineer.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 제목</label>
+                    <input type="text" name="title" id="id_title" value="{{ form.title.value|default:'' }}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 mb-2" style="font-family: 'Noto Sans KR', sans-serif;">이슈 내용</label>
+                    <textarea name="content" id="id_content" rows="4" 
+                              class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-sm">{{ form.content.value|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex justify-end gap-3 mt-8">
+            <a href="{% url 'issue_detail' issue.pk %}" class="px-8 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition shadow-md" style="font-family: 'Noto Sans KR', sans-serif;">
+                취소
+            </a>
+            <button type="submit" class="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-bold hover:from-orange-600 hover:to-orange-700 transition shadow-lg transform hover:scale-105" style="font-family: 'Noto Sans KR', sans-serif;">
+                수정
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- 노드 선택 모달 -->
+<div id="nodeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">노드 선택</h3>
+            <button onclick="closeNodeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        
+        <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-2">선택된 클러스터: <span id="selectedClusterName" class="font-bold text-blue-600">{{ issue.target_cluster.cluster_name|default:'' }}</span></p>
+            <input type="text" id="nodeSearch" placeholder="노드 이름, 시리얼 번호 검색..." 
+                   class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div id="nodeList" class="space-y-3">
+            <!-- 동적으로 로드됨 -->
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeNodeModal()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition">닫기</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedClusterId = {{ issue.target_cluster.pk|default:'null' }};
+    let selectedClusterName = '{{ issue.target_cluster.cluster_name|default:""|escapejs }}';
+    
+    // 노드 모달
+    function openNodeModal() {
+        if (!selectedClusterId) {
+            alert('먼저 클러스터를 선택해주세요.');
+            return;
+        }
+        document.getElementById('nodeModal').classList.remove('hidden');
+        document.getElementById('selectedClusterName').textContent = selectedClusterName;
+        loadNodeList();
+    }
+    
+    function closeNodeModal() {
+        document.getElementById('nodeModal').classList.add('hidden');
+    }
+    
+    function loadNodeList() {
+        if (!selectedClusterId) return;
+        
+        const search = document.getElementById('nodeSearch').value;
+        fetch(`/ajax/get-nodes-by-cluster/?cluster_id=${selectedClusterId}&q=${encodeURIComponent(search)}`)
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById('nodeList');
+                let html = '';
+                
+                if (data.nodes && data.nodes.length > 0) {
+                    data.nodes.forEach(node => {
+                        const serialNumber = node.serial_number || '';
+                        html += `
+                            <div class="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-300 transition cursor-pointer" 
+                                 onclick="selectNode(${node.id}, '${(node.node_name || '').replace(/'/g, "\\'")}', ${node.node_number || 1}, '${(serialNumber || '').replace(/'/g, "\\'")}')">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-gray-800">${node.node_name || '노드 이름 없음'}</div>
+                                        <div class="text-sm text-gray-500 mt-1">
+                                            ${serialNumber ? 'SN: ' + serialNumber : ''}
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-arrow-right text-blue-400"></i>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = '<div class="text-center py-8 text-gray-400">검색 결과가 없습니다.</div>';
+                }
+                
+                list.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+    
+    function selectNode(nodeId, nodeName, nodeNumber, serialNumber) {
+        document.getElementById('id_target_node').value = nodeId;
+        // 노드 이름과 시리얼 번호 함께 표시
+        const displayText = nodeName ? 
+            (serialNumber ? `${nodeName} (SN: ${serialNumber})` : nodeName) : 
+            '노드 이름 없음';
+        document.getElementById('target_node_display').value = displayText;
+        // 노드 번호도 저장
+        const nodeNumberInput = document.getElementById('id_target_node_number');
+        if (nodeNumberInput) {
+            nodeNumberInput.value = nodeNumber || 1;
+        }
+        closeNodeModal();
+    }
+    
+    // 이벤트 리스너
+    document.getElementById('nodeSearch').addEventListener('input', function() {
+        loadNodeList();
+    });
+    
+    document.getElementById('nodeModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeNodeModal();
+        }
+    });
+    
+    document.querySelectorAll('input[type="date"]').forEach(input => {
+        input.setAttribute('max', '9999-12-31');
+    });
+
+    // 필수 필드 검증
+    function validateIssueForm(event) {
+        const requiredFields = [
+            { id: 'id_issue_type', name: '이슈 타입' },
+            { id: 'id_issue_date', name: '이슈 발생 일자' },
+            { id: 'id_title', name: '이슈 제목' },
+            { id: 'id_content', name: '이슈 내용' }
+        ];
+        
+        const missingFields = [];
+        
+        for (const field of requiredFields) {
+            const element = document.getElementById(field.id);
+            if (!element || !element.value || element.value.trim() === '') {
+                missingFields.push(field.name);
+            }
+        }
+        
+        if (missingFields.length > 0) {
+            event.preventDefault();
+            alert('다음 필수 항목을 입력해주세요:\n\n' + missingFields.join('\n'));
+            return false;
+        }
+        
+        return true;
+    }
+</script>
+{% endblock %}

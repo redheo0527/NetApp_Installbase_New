@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* 로그인 폼 페이드인 애니메이션 */
+    @keyframes login-appear {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 로그인 성공 시 전체 화면 페이드 아웃 효과 */
+    .page-exit {
+        animation: page-slide-out 0.6s ease-in forwards;
+    }
+    @keyframes page-slide-out {
+        to { opacity: 0; transform: scale(0.95); filter: blur(10px); }
+    }
+
+    .login-container {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        perspective: 1000px;
+    }
+
+    .login-card {
+        background: white;
+        width: 100%;
+        max-width: 450px;
+        padding: 3rem;
+        border-radius: 2.5rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f3f4f6;
+        animation: login-appear 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .input-group {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .input-group input {
+        width: 100%;
+        padding: 1rem 1.25rem 1rem 3rem;
+        background: #f9fafb;
+        border: 2px solid transparent;
+        border-radius: 1.25rem;
+        font-weight: 600;
+        transition: all 0.3s;
+        outline: none;
+    }
+
+    .input-group input:focus {
+        background: white;
+        border-color: #0067B3;
+        box-shadow: 0 0 0 4px rgba(0, 103, 179, 0.1);
+    }
+
+    .input-group i {
+        position: absolute;
+        left: 1.25rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        transition: color 0.3s;
+    }
+
+    .input-group input:focus + i {
+        color: #0067B3;
+    }
+
+    .login-btn {
+        width: 100%;
+        padding: 1rem;
+        background: linear-gradient(135deg, #0067B3 0%, #004e89 100%);
+        color: white;
+        border-radius: 1.25rem;
+        font-weight: 800;
+        letter-spacing: 0.025em;
+        box-shadow: 0 10px 20px -5px rgba(0, 103, 179, 0.3);
+        transition: all 0.3s;
+    }
+
+    .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 30px -5px rgba(0, 103, 179, 0.4);
+    }
+
+    .brand-logo {
+        width: 60px;
+        height: 60px;
+        background: #0067B3;
+        border-radius: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 2rem;
+        box-shadow: 0 10px 20px rgba(0, 103, 179, 0.2);
+    }
+</style>
+
+<div class="login-container" id="loginWrapper">
+    <div class="login-card" id="loginCard">
+        <div class="brand-logo">
+            <i class="fa-solid fa-database text-white text-2xl"></i>
+        </div>
+        
+        <div class="text-center mb-10">
+            <h1 class="text-2xl font-black text-gray-900 mb-2">Storage Inventory</h1>
+            <p class="text-gray-400 font-medium">인벤토리 관리를 위해 로그인하세요.</p>
+        </div>
+
+        <form method="post" id="loginForm">
+            {% csrf_token %}
+            <div class="input-group">
+                <input type="text" name="username" placeholder="아이디" required>
+                <i class="fa-solid fa-user"></i>
+            </div>
+            
+            <div class="input-group mb-8">
+                <input type="password" name="password" placeholder="비밀번호" required>
+                <i class="fa-solid fa-lock"></i>
+            </div>
+
+            <button type="submit" class="login-btn">
+                시스템 접속하기
+            </button>
+        </form>
+
+        <div class="mt-8 text-center">
+            <p class="text-sm text-gray-400">계정 정보가 기억나지 않으시나요? <a href="#" class="text-blue-600 font-bold hover:underline">엔지니어 팀 문의</a></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('loginForm').onsubmit = function() {
+        // 카드가 작아지면서 흐릿해지는 애니메이션 클래스 추가
+        document.getElementById('loginCard').classList.add('page-exit');
+        // 그 후 Django의 기본 POST 처리가 이어지며 대시보드로 이동합니다.
+    };
+</script>
+{% endblock %}

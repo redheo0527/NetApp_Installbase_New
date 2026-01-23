@@ -1,0 +1,490 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto py-12 px-6">
+    <div class="mb-10">
+        <h2 class="text-3xl font-black text-gray-900 tracking-tight">RMA 등록</h2>
+        <p class="text-gray-400 mt-2 font-medium">새로운 RMA를 등록합니다.</p>
+    </div>
+
+    <form method="post" id="rmaForm" class="space-y-8">
+        {% csrf_token %}
+        
+        <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-50">
+            <h3 class="text-lg font-bold text-gray-800 mb-8 border-b border-gray-50 pb-4">
+                <i class="fa-solid fa-box text-indigo-500 mr-2"></i> RMA 기본 정보
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 mb-2">케이스 번호</label>
+                    <div class="flex gap-3">
+                        {{ form.case_number }}
+                        <button type="button" onclick="openCaseModal()" class="px-4 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition text-sm whitespace-nowrap">
+                            <i class="fa-solid fa-search mr-2"></i>검색
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">RMA 수량</label>
+                    <input type="number" id="id_rma_quantity" name="rma_quantity" min="1" value="1" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm"
+                           onchange="updateRMASections()">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">반납 필요 여부</label>
+                    {{ form.return_required }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- RMA 섹션 (동적으로 생성) -->
+        <div id="rmaSections" class="space-y-6">
+            <!-- RMA 수량에 따라 동적으로 생성됨 -->
+        </div>
+        
+        <div class="flex justify-end gap-3">
+            <a href="{% url 'rma_list' %}" class="px-8 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition">
+                취소
+            </a>
+            <button type="submit" class="px-8 py-3 bg-indigo-500 text-white rounded-xl font-bold hover:bg-indigo-600 transition shadow-lg">
+                등록
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- 케이스 번호 선택 모달 -->
+<div id="caseModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">케이스 번호 선택</h3>
+            <button onclick="closeCaseModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        
+        <div class="mb-4">
+            <input type="text" id="caseSearch" placeholder="케이스 번호, 이슈 제목 검색..." 
+                   class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div id="caseList" class="space-y-3">
+            <!-- 동적으로 로드됨 -->
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeCaseModal()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition">닫기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 파트 선택 모달 -->
+<div id="partModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">파트 선택</h3>
+            <button onclick="closePartModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">파트 종류</label>
+                <select id="partCategory" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500" onchange="updatePartType()">
+                    <option value="">선택하세요</option>
+                    <option value="node">Node</option>
+                    <option value="shelf">Shelf</option>
+                    <option value="disk">Disk</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">파트 타입</label>
+                <select id="partType" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500" onchange="loadParts()">
+                    <option value="">선택하세요</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">파트 검색</label>
+                <input type="text" id="partSearch" placeholder="파트 넘버 검색..." 
+                       class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500"
+                       oninput="loadParts()">
+            </div>
+        </div>
+        
+        <div class="mb-4">
+            <button type="button" onclick="openNewPartModal()" class="px-4 py-2 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition text-sm">
+                <i class="fa-solid fa-plus mr-2"></i>신규 파트 등록
+            </button>
+        </div>
+        
+        <div id="partList" class="space-y-3">
+            <div class="text-center py-8 text-gray-400">파트 종류를 선택하세요.</div>
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+            <button onclick="closePartModal()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition">닫기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 신규 파트 등록 모달 -->
+<div id="newPartModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">신규 파트 등록</h3>
+            <button onclick="closeNewPartModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        
+        <form id="newPartForm" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">파트 종류</label>
+                <select id="newPartCategory" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500" onchange="updateNewPartType()" required>
+                    <option value="">선택하세요</option>
+                    <option value="node">Node</option>
+                    <option value="shelf">Shelf</option>
+                    <option value="disk">Disk</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">파트 타입</label>
+                <select id="newPartType" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500" required>
+                    <option value="">선택하세요</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">파트 넘버</label>
+                <input type="text" id="newPartNumber" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">파트 설명</label>
+                <textarea id="newPartDescription" rows="3" class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeNewPartModal()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
+                <button type="submit" class="px-6 py-2.5 bg-green-500 text-white rounded-xl font-bold text-sm hover:bg-green-600 transition">등록</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const partTypeOptions = {
+        node: ['chassis', 'controller', 'power', 'nvdimm', 'dimm', 'adapter', 'flash_cache', 'boot_device', 'nvdimm_module', 'nvram_battery', 'cable', 'sfp'],
+        shelf: ['chassis', 'shelf_module', 'shelf_power', 'adapter'],
+        disk: ['nvme', 'nl_sas', 'sas', 'ssd']
+    };
+    
+    const partTypeLabels = {
+        node: {
+            'chassis': 'Chassis',
+            'controller': '컨트롤러',
+            'power': 'Power',
+            'nvdimm': 'NVDIMM',
+            'dimm': 'DIMM',
+            'adapter': 'Adapter',
+            'flash_cache': 'Flash Cache',
+            'boot_device': 'Boot Device',
+            'nvdimm_module': 'NVDIMM 모듈',
+            'nvram_battery': 'NVRAM Battery',
+            'cable': 'Cable',
+            'sfp': 'SFP'
+        },
+        shelf: {
+            'chassis': 'Chassis',
+            'shelf_module': 'Shelf Module',
+            'shelf_power': 'Shelf Power',
+            'adapter': 'Adapter'
+        },
+        disk: {
+            'nvme': 'NVMe',
+            'nl_sas': 'NL-SAS',
+            'sas': 'SAS',
+            'ssd': 'SSD'
+        }
+    };
+    
+    let currentRMAIndex = 0;
+    
+    function updateRMASections() {
+        const quantity = parseInt(document.getElementById('id_rma_quantity').value) || 1;
+        const container = document.getElementById('rmaSections');
+        container.innerHTML = '';
+        
+        for (let i = 0; i < quantity; i++) {
+            const section = createRMASection(i);
+            container.appendChild(section);
+        }
+    }
+    
+    function createRMASection(index) {
+        const div = document.createElement('div');
+        div.className = 'bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-50';
+        div.innerHTML = `
+            <h3 class="text-lg font-bold text-gray-800 mb-6 border-b border-gray-50 pb-4">
+                <i class="fa-solid fa-box text-indigo-500 mr-2"></i> RMA #${index + 1}
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">RMA 번호</label>
+                    <input type="text" name="rma_number_${index}" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">파트 넘버</label>
+                    <div class="flex gap-3">
+                        <input type="text" id="part_number_${index}" name="part_${index}" readonly
+                               class="flex-1 p-4 rounded-2xl border-gray-100 bg-gray-50 text-sm" required>
+                        <input type="hidden" id="part_id_${index}" name="part_id_${index}">
+                        <button type="button" onclick="openPartModal(${index})" class="px-4 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition text-sm whitespace-nowrap">
+                            <i class="fa-solid fa-search mr-2"></i>검색
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">파트 수량</label>
+                    <input type="number" name="part_quantity_${index}" min="1" value="1" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">배송 지역</label>
+                    <input type="text" name="delivery_region_${index}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">배송 일자</label>
+                    <input type="date" name="delivery_date_${index}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">반납 지역</label>
+                    <input type="text" name="return_region_${index}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">반납 일자</label>
+                    <input type="date" name="return_date_${index}" 
+                           class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">지연 배송 여부</label>
+                    <select name="is_delayed_${index}" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                        <option value="normal">정상배송</option>
+                        <option value="delayed">지연배송</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">반납 여부</label>
+                    <select name="return_status_${index}" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
+                        <option value="not_returned">미반납</option>
+                        <option value="returned">반납</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        return div;
+    }
+    
+    function openCaseModal() {
+        document.getElementById('caseModal').classList.remove('hidden');
+        loadCases();
+    }
+    
+    function closeCaseModal() {
+        document.getElementById('caseModal').classList.add('hidden');
+    }
+    
+    function loadCases() {
+        const search = document.getElementById('caseSearch').value;
+        fetch(`/api/get-cases/?q=${encodeURIComponent(search)}`)
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById('caseList');
+                let html = '';
+                
+                if (data.cases && data.cases.length > 0) {
+                    data.cases.forEach(case_item => {
+                        html += `
+                            <div class="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-300 transition cursor-pointer" 
+                                 onclick="selectCase(${case_item.id}, '${case_item.case_number}')">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-gray-800 font-mono">${case_item.case_number}</div>
+                                        <div class="text-sm text-gray-500 mt-1">${case_item.title}</div>
+                                        <div class="text-xs text-gray-400 mt-1">${case_item.cluster_name} - ${case_item.issue_date}</div>
+                                    </div>
+                                    <i class="fa-solid fa-arrow-right text-blue-400"></i>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = '<div class="text-center py-8 text-gray-400">검색 결과가 없습니다.</div>';
+                }
+                
+                list.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+    
+    function selectCase(caseId, caseNumber) {
+        document.getElementById('id_case_number').value = caseId;
+        closeCaseModal();
+    }
+    
+    function openPartModal(index) {
+        currentRMAIndex = index;
+        document.getElementById('partModal').classList.remove('hidden');
+    }
+    
+    function closePartModal() {
+        document.getElementById('partModal').classList.add('hidden');
+    }
+    
+    function updatePartType() {
+        const category = document.getElementById('partCategory').value;
+        const typeSelect = document.getElementById('partType');
+        typeSelect.innerHTML = '<option value="">선택하세요</option>';
+        
+        if (category && partTypeOptions[category]) {
+            partTypeOptions[category].forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = partTypeLabels[category][type] || type;
+                typeSelect.appendChild(option);
+            });
+        }
+    }
+    
+    function updateNewPartType() {
+        const category = document.getElementById('newPartCategory').value;
+        const typeSelect = document.getElementById('newPartType');
+        typeSelect.innerHTML = '<option value="">선택하세요</option>';
+        
+        if (category && partTypeOptions[category]) {
+            partTypeOptions[category].forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = partTypeLabels[category][type] || type;
+                typeSelect.appendChild(option);
+            });
+        }
+    }
+    
+    function loadParts() {
+        const category = document.getElementById('partCategory').value;
+        const partType = document.getElementById('partType').value;
+        const search = document.getElementById('partSearch').value;
+        
+        if (!category) {
+            document.getElementById('partList').innerHTML = '<div class="text-center py-8 text-gray-400">파트 종류를 선택하세요.</div>';
+            return;
+        }
+        
+        fetch(`/part/get-by-category/ajax/?category=${category}&part_type=${partType}`)
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById('partList');
+                let html = '';
+                
+                let parts = data.parts || [];
+                if (search) {
+                    parts = parts.filter(p => p.part_number.toLowerCase().includes(search.toLowerCase()));
+                }
+                
+                if (parts.length > 0) {
+                    parts.forEach(part => {
+                        html += `
+                            <div class="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-300 transition cursor-pointer" 
+                                 onclick="selectPart(${part.id}, '${part.part_number}')">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-gray-800 font-mono">${part.part_number}</div>
+                                        <div class="text-sm text-gray-500 mt-1">${part.part_type} - ${part.description || ''}</div>
+                                    </div>
+                                    <i class="fa-solid fa-arrow-right text-blue-400"></i>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = '<div class="text-center py-8 text-gray-400">검색 결과가 없습니다.</div>';
+                }
+                
+                list.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+    
+    function selectPart(partId, partNumber) {
+        document.getElementById(`part_id_${currentRMAIndex}`).value = partId;
+        document.getElementById(`part_number_${currentRMAIndex}`).value = partNumber;
+        closePartModal();
+    }
+    
+    function openNewPartModal() {
+        document.getElementById('newPartModal').classList.remove('hidden');
+    }
+    
+    function closeNewPartModal() {
+        document.getElementById('newPartModal').classList.add('hidden');
+        document.getElementById('newPartForm').reset();
+    }
+    
+    document.getElementById('newPartForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('part_number', document.getElementById('newPartNumber').value);
+        formData.append('category', document.getElementById('newPartCategory').value);
+        formData.append('part_type', document.getElementById('newPartType').value);
+        formData.append('description', document.getElementById('newPartDescription').value);
+        
+        fetch('/part/add/ajax/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                selectPart(data.id, data.name);
+                closeNewPartModal();
+            } else {
+                alert('등록에 실패했습니다: ' + (data.error || '알 수 없는 오류'));
+            }
+        })
+        .catch(error => {
+            alert('등록 중 오류가 발생했습니다.');
+            console.error(error);
+        });
+    });
+    
+    document.getElementById('partSearch').addEventListener('input', loadParts);
+    document.getElementById('caseSearch').addEventListener('input', loadCases);
+    
+    document.getElementById('caseModal').addEventListener('click', function(e) {
+        if (e.target === this) closeCaseModal();
+    });
+    
+    document.getElementById('partModal').addEventListener('click', function(e) {
+        if (e.target === this) closePartModal();
+    });
+    
+    document.getElementById('newPartModal').addEventListener('click', function(e) {
+        if (e.target === this) closeNewPartModal();
+    });
+    
+    // 초기 RMA 섹션 생성
+    updateRMASections();
+
+</script>
+		<script>
+			document.querySelectorAll('input[type="date"]').forEach(input => {
+    input.setAttribute('max', '9999-12-31');
+});
+		</script>
+{% endblock %}

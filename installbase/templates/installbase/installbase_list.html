@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800">Install Base Inventory</h2>
+            <p class="text-gray-400 mt-1">전체 유지보수 장비 자산 리스트입니다.</p>
+        </div>
+        
+        <form method="get" class="relative w-full md:w-96">
+            <input type="text" name="q" value="{{ query }}" placeholder="고객사, SN, 클러스터 검색..." 
+                   class="w-full pl-12 pr-4 py-3 rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-[#0067B3] bg-white">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-4 text-gray-300"></i>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-50 overflow-hidden">
+        <div class="p-8 border-b border-gray-50 flex justify-between items-center">
+            <div class="flex gap-2">
+                <span class="px-4 py-1.5 bg-blue-50 text-[#0067B3] rounded-xl text-xs font-bold">전체 {{ installbases.count }}</span>
+                <span class="px-4 py-1.5 bg-gray-50 text-gray-400 rounded-xl text-xs font-bold">최근 업데이트 순</span>
+            </div>
+            <a href="/admin/your_app/installbase/add/" class="text-sm font-bold text-[#0067B3] hover:underline">
+                <i class="fa-solid fa-plus mr-1"></i> 새 장비 추가
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-gray-400 text-xs uppercase tracking-widest bg-gray-50/50">
+                        <th class="px-8 py-4 font-semibold">Customer & Project</th>
+                        <th class="px-8 py-4 font-semibold">Hardware Info</th>
+                        <th class="px-8 py-4 font-semibold text-center">Network</th>
+                        <th class="px-8 py-4 font-semibold">Maintenance</th>
+                        <th class="px-8 py-4 font-semibold text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for item in installbases %}
+                    <tr class="hover:bg-blue-50/20 transition-colors group">
+                        <td class="px-8 py-6">
+                            <div class="flex flex-col">
+                                <span class="text-lg font-bold text-gray-800 group-hover:text-[#0067B3] transition-colors">{{ item.customer }}</span>
+                                <span class="text-sm text-gray-400">{{ item.project }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-8 py-6">
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-0.5 bg-blue-600 text-white rounded text-[10px] font-black italic">{{ item.product.lineup }}</span>
+                                    <span class="font-semibold text-gray-700">{{ item.product.model_name }}</span>
+                                </div>
+                                <span class="text-xs text-gray-400 font-mono">{{ item.serial_number_1 }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-8 py-6 text-center">
+                            {% if item.is_switch_connected %}
+                            <div class="inline-flex items-center justify-center w-10 h-10 bg-cyan-50 text-cyan-500 rounded-xl" title="Switch Connected">
+                                <i class="fa-solid fa-network-wired"></i>
+                            </div>
+                            {% else %}
+                            <div class="inline-flex items-center justify-center w-10 h-10 bg-gray-100 text-gray-300 rounded-xl" title="Direct-Connect">
+                                <i class="fa-solid fa-slash text-[10px] absolute translate-x-1 -translate-y-1"></i>
+                                <i class="fa-solid fa-network-wired"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-8 py-6">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-medium {% if item.is_expiring_soon %}text-red-500{% else %}text-gray-600{% endif %}">
+                                    {{ item.maintenance_end|date:"Y. m. d" }}
+                                </span>
+                                <span class="text-[10px] uppercase font-bold text-gray-300">{{ item.service_level }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-8 py-6 text-right">
+                            <a href="{% url 'installbase_detail' item.pk %}" 
+                               class="inline-flex items-center justify-center w-10 h-10 bg-gray-50 text-gray-400 rounded-xl group-hover:bg-[#0067B3] group-hover:text-white transition-all shadow-sm">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-20 text-center text-gray-400">
+                            <i class="fa-solid fa-inbox text-4xl mb-4 block"></i>
+                            검색 결과가 없습니다.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-12 px-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800">{{ issue.title }}</h2>
+            <p class="text-gray-400 mt-1">이슈 상세 정보</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'issue_list' %}" class="px-6 py-3 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition text-sm">목록으로</a>
+            <a href="{% url 'issue_update' issue.pk %}" class="px-6 py-3 bg-blue-500 text-white rounded-2xl font-bold hover:bg-blue-600 transition text-sm">수정</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-6">
+            <!-- 이슈 기본 정보 -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-50 p-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-6">이슈 정보</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-2">대상 클러스터</p>
+                        <p class="text-lg font-semibold text-gray-800">{{ issue.target_cluster.cluster_name|default:"-" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-2">대상 노드</p>
+                        <div class="text-lg font-semibold text-gray-800">
+                            {% if issue.target_node %}
+                                {% if issue.target_node_number == 1 and issue.target_node.node_name_1 %}
+                                <div>{{ issue.target_node.node_name_1 }}</div>
+                                {% elif issue.target_node_number == 2 and issue.target_node.node_name_2 %}
+                                <div>{{ issue.target_node.node_name_2 }}</div>
+                                {% else %}
+                                <div class="flex flex-col gap-1">
+                                    {% if issue.target_node.node_name_1 %}
+                                    <div>{{ issue.target_node.node_name_1 }}</div>
+                                    {% endif %}
+                                    {% if issue.target_node.node_name_2 %}
+                                    <div>{{ issue.target_node.node_name_2 }}</div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-2">이슈 타입</p>
+                        <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-bold">
+                            {{ issue.get_issue_type_display }}
+                        </span>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-2">진행 상태</p>
+                        {% if issue.status == 'open' %}
+                        <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-bold">진행중</span>
+                        {% elif issue.status == 'resolved' %}
+                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-bold">해결됨</span>
+                        {% elif issue.status == 'closed' %}
+                        <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm font-bold">종료</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-2">이슈 발생일</p>
+                        <p class="text-lg font-semibold text-gray-800">{{ issue.issue_date|date:"Y-m-d" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-2">이슈 종료일</p>
+                        <p class="text-lg font-semibold text-gray-800">{{ issue.end_date|date:"Y-m-d"|default:"-" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-2">케이스 번호</p>
+                        <p class="text-lg font-semibold text-gray-800 font-mono">{{ issue.case_number|default:"-" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-2">이슈 진행자</p>
+                        <p class="text-lg font-semibold text-gray-800">
+                            {% if issue.assigned_engineer %}
+                                {{ issue.assigned_engineer.last_name }}{{ issue.assigned_engineer.first_name|default:issue.assigned_engineer.username }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <p class="text-xs font-bold text-gray-400 uppercase mb-2">이슈 내용</p>
+                    <div class="p-4 bg-gray-50 rounded-xl text-gray-700 whitespace-pre-wrap">{{ issue.content }}</div>
+                </div>
+            </div>
+            
+            <!-- RMA 섹션 -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-50 p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">RMA 정보</h3>
+                    <a href="{% url 'rma_create' %}?case_number={{ issue.pk }}" 
+                       class="px-4 py-2 bg-indigo-500 text-white rounded-xl font-bold hover:bg-indigo-600 transition text-sm">
+                        <i class="fa-solid fa-plus mr-2"></i>RMA 등록
+                    </a>
+                </div>
+                
+                {% if rmas %}
+                <div class="space-y-4">
+                    {% for rma in rmas %}
+                    <div class="p-6 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-1">RMA 번호</p>
+                                <p class="text-lg font-semibold text-gray-800 font-mono">{{ rma.rma_number }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-1">파트 넘버</p>
+                                <p class="text-lg font-semibold text-gray-800 font-mono">{{ rma.part.part_number }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-1">파트 수량</p>
+                                <p class="text-lg font-semibold text-gray-800">{{ rma.part_quantity }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-1">반납 필요 여부</p>
+                                {% if rma.return_required == 'required' %}
+                                <span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-bold">반납 필요</span>
+                                {% else %}
+                                <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold">반납 불필요</span>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-1">배송 지역</p>
+                                <p class="text-sm font-semibold text-gray-800">{{ rma.delivery_region }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-1">배송 일자</p>
+                                <p class="text-sm font-semibold text-gray-800">{{ rma.delivery_date|date:"Y-m-d"|default:"-" }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-1">반납 지역</p>
+                                <p class="text-sm font-semibold text-gray-800">{{ rma.return_region|default:"-" }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-1">반납 일자</p>
+                                <p class="text-sm font-semibold text-gray-800">{{ rma.return_date|date:"Y-m-d"|default:"-" }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-1">지연 배송 여부</p>
+                                {% if rma.is_delayed == 'delayed' %}
+                                <span class="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold">지연배송</span>
+                                {% elif rma.is_delayed == 'normal' %}
+                                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold">정상배송</span>
+                                {% else %}
+                                <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold">배송 미완료</span>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-1">반납 여부</p>
+                                {% if rma.return_status == 'returned' %}
+                                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold">반납</span>
+                                {% else %}
+                                <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold">미반납</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12 text-gray-400">
+                    <i class="fa-solid fa-box text-4xl mb-4 block"></i>
+                    <p>등록된 RMA가 없습니다.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="space-y-6">
+            <!-- 빠른 액션 -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-50 p-6">
+                <h4 class="text-lg font-bold text-gray-800 mb-4">빠른 액션</h4>
+                <div class="space-y-3">
+                    <a href="{% url 'rma_create' %}?case_number={{ issue.pk }}" 
+                       class="block w-full px-4 py-3 bg-indigo-500 text-white rounded-xl font-bold hover:bg-indigo-600 transition text-center">
+                        <i class="fa-solid fa-plus mr-2"></i>RMA 등록
+                    </a>
+                    {% if issue.target_node %}
+                    <a href="{% url 'installbase_detail' issue.target_node.pk %}" 
+                       class="block w-full px-4 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition text-center">
+                        <i class="fa-solid fa-server mr-2"></i>노드 상세 보기
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

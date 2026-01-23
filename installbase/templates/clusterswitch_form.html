@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.7) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+    @keyframes pop-in {
+        0% { opacity: 0; transform: scale(0.98); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+    .animate-pop-in {
+        animation: pop-in 0.15s ease-out forwards;
+        will-change: transform, opacity;
+    }
+    select, input {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        border-radius: 1.25rem;
+        border: 1px solid #f3f4f6;
+        background-color: #f9fafb;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+    select:focus, input:focus {
+        outline: none;
+        border-color: #0067B3;
+        background-color: #fff;
+        box-shadow: 0 0 0 4px rgba(0, 103, 179, 0.05);
+    }
+    label { display: block; font-size: 0.75rem; font-weight: 700; color: #374151; margin-bottom: 0.5rem; margin-left: 0.25rem; }
+</style>
+
+<div class="max-w-6xl mx-auto py-12 px-6">
+    <div class="mb-10">
+        <h2 class="text-3xl font-black text-gray-900 tracking-tight">Cluster Switch Registration</h2>
+        <p class="text-gray-400 mt-2 font-medium">클러스터 스위치 쌍 등록 폼입니다.</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-8" onsubmit="return validateClusterSwitchForm(event)">
+        {% csrf_token %}
+
+        <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-50">
+            <h3 class="text-lg font-bold text-gray-800 mb-8 border-b border-gray-50 pb-4">
+                <i class="fa-solid fa-tag text-blue-500 mr-2"></i> 스위치 타입
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>{{ form.switch_type.label_tag }} {{ form.switch_type }}</div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-50">
+            <h3 class="text-lg font-bold text-gray-800 mb-8 border-b border-gray-50 pb-4">
+                <i class="fa-solid fa-network-wired text-purple-500 mr-2"></i> 스위치 #1 정보
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>{{ form.switch_name_1.label_tag }} {{ form.switch_name_1 }}</div>
+                <div>{{ form.ip_address_1.label_tag }} {{ form.ip_address_1 }}</div>
+                
+                <div>
+                    <div class="flex justify-between items-end mb-2">
+                        <label class="text-sm font-bold text-gray-700">{{ form.switch_model_1.label }}</label>
+                        <button type="button" onclick="openModal('switch-model-modal')" class="text-[10px] font-bold text-purple-600 hover:underline">
+                            <i class="fa-solid fa-plus mr-1"></i>신규 등록
+                        </button>
+                    </div>
+                    {{ form.switch_model_1 }}
+                </div>
+                <div>{{ form.serial_number_1.label_tag }} {{ form.serial_number_1 }}</div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-50">
+            <h3 class="text-lg font-bold text-gray-800 mb-8 border-b border-gray-50 pb-4">
+                <i class="fa-solid fa-network-wired text-purple-500 mr-2"></i> 스위치 #2 정보
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>{{ form.switch_name_2.label_tag }} {{ form.switch_name_2 }}</div>
+                <div>{{ form.ip_address_2.label_tag }} {{ form.ip_address_2 }}</div>
+                
+                <div>
+                    <div class="flex justify-between items-end mb-2">
+                        <label class="text-sm font-bold text-gray-700">{{ form.switch_model_2.label }}</label>
+                        <button type="button" onclick="openModal('switch-model-modal')" class="text-[10px] font-bold text-purple-600 hover:underline">
+                            <i class="fa-solid fa-plus mr-1"></i>신규 등록
+                        </button>
+                    </div>
+                    {{ form.switch_model_2 }}
+                </div>
+                <div>{{ form.serial_number_2.label_tag }} {{ form.serial_number_2 }}</div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-50">
+            <h3 class="text-lg font-bold text-gray-800 mb-8 border-b border-gray-50 pb-4">
+                <i class="fa-solid fa-calendar-check text-blue-500 mr-2"></i> 설치 및 유지보수 정보
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>{{ form.install_date.label_tag }} {{ form.install_date }}</div>
+                <div>{{ form.maintenance_start.label_tag }} {{ form.maintenance_start }}</div>
+                <div>{{ form.maintenance_end.label_tag }} {{ form.maintenance_end }}</div>
+                <div>{{ form.contract_end_date.label_tag }} {{ form.contract_end_date }}</div>
+            </div>
+        </div>
+
+        <div class="flex gap-4 justify-end">
+            <a href="{% url 'clusterswitch_list' %}" class="px-8 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition">
+                취소
+            </a>
+            <button type="submit" class="px-8 py-4 bg-[#0067B3] text-white rounded-2xl font-bold shadow-lg shadow-blue-100 hover:translate-y-[-2px] transition">
+                등록
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- 스위치 모델 등록 모달 -->
+<div id="switch-model-modal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-[100] p-4">
+    <div class="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl animate-pop-in">
+        <h3 class="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+            <i class="fa-solid fa-network-wired text-purple-600"></i> 신규 스위치 모델
+        </h3>
+        <form id="switch-model-ajax-form" class="space-y-5">
+            <input type="text" name="model_name" class="w-full p-4 rounded-2xl bg-gray-50 border-none" placeholder="스위치 모델명" required>
+            <div class="flex items-center gap-3 p-2 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                <label class="cursor-pointer bg-purple-600 text-white text-[11px] font-bold px-4 py-2 rounded-xl">
+                    전면 이미지 선택
+                    <input type="file" name="front_image" class="hidden" onchange="updateSwitchModelFileName(this, 'front')" accept="image/*">
+                </label>
+                <span class="file-name-front text-xs text-gray-400 italic truncate">전면 이미지를 선택하세요</span>
+            </div>
+            <div class="flex items-center gap-3 p-2 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                <label class="cursor-pointer bg-purple-600 text-white text-[11px] font-bold px-4 py-2 rounded-xl">
+                    후면 이미지 선택
+                    <input type="file" name="back_image" class="hidden" onchange="updateSwitchModelFileName(this, 'back')" accept="image/*">
+                </label>
+                <span class="file-name-back text-xs text-gray-400 italic truncate">후면 이미지를 선택하세요</span>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeModal('switch-model-modal')" class="flex-1 py-4 font-bold text-gray-400 bg-gray-100 rounded-2xl">취소</button>
+                <button type="submit" class="flex-1 py-4 font-bold text-white bg-purple-600 rounded-2xl">등록</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.remove('hidden');
+        document.getElementById(modalId).classList.add('flex');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+        document.getElementById(modalId).classList.remove('flex');
+    }
+
+    function updateSwitchModelFileName(input, type) {
+        const fileName = input.files[0] ? input.files[0].name : (type === 'front' ? '전면 이미지를 선택하세요' : '후면 이미지를 선택하세요');
+        const selector = type === 'front' ? '.file-name-front' : '.file-name-back';
+        input.closest('div').querySelector(selector).textContent = fileName;
+    }
+
+    function handleAjaxSubmit(formId, url, fieldName, modalId, previewId, selectId) {
+        const form = document.getElementById(formId);
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.id) {
+                    // select 옵션 추가
+                    const select1 = document.getElementById('id_switch_model_1');
+                    const select2 = document.getElementById('id_switch_model_2');
+                    const option1 = document.createElement('option');
+                    const option2 = document.createElement('option');
+                    option1.value = data.id;
+                    option1.textContent = data.name;
+                    option1.selected = true;
+                    option2.value = data.id;
+                    option2.textContent = data.name;
+                    select1.appendChild(option1);
+                    select2.appendChild(option2);
+                    
+                    form.reset();
+                    closeModal(modalId);
+                } else {
+                    alert('등록에 실패했습니다: ' + (data.error || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                alert('등록 중 오류가 발생했습니다.');
+                console.error(error);
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        handleAjaxSubmit('switch-model-ajax-form', '/switch-model/add/ajax/', 'switch_model', 'switch-model-modal', '', 'switch_model');
+    });
+document.querySelectorAll('input[type="date"]').forEach(input => {
+    input.setAttribute('max', '9999-12-31');
+});
+
+// 필수 필드 검증
+function validateClusterSwitchForm(event) {
+    const requiredFields = [
+        { id: 'id_switch_type', name: '스위치 타입' },
+        { id: 'id_switch_name_1', name: '스위치 이름 #1' },
+        { id: 'id_switch_model_1', name: '스위치 모델 #1' },
+        { id: 'id_serial_number_1', name: '시리얼 번호 #1' },
+        { id: 'id_install_date', name: '설치일' }
+    ];
+    
+    const missingFields = [];
+    
+    for (const field of requiredFields) {
+        const element = document.getElementById(field.id);
+        if (!element || !element.value || element.value.trim() === '') {
+            missingFields.push(field.name);
+        }
+    }
+    
+    if (missingFields.length > 0) {
+        event.preventDefault();
+        alert('다음 필수 항목을 입력해주세요:\n\n' + missingFields.join('\n'));
+        return false;
+    }
+    
+    return true;
+}
+</script>
+{% endblock %}

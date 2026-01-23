@@ -1,0 +1,1057 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    @keyframes slide-up { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+    .animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
+
+    /* 기본 카드 스타일 */
+    .info-card { background: white; border-radius: 2rem; border: 1px solid #f3f4f6; padding: 2rem; transition: all 0.3s ease; position: relative; }
+    .info-card:hover { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
+
+    /* 텍스트 스타일 */
+    .label-text { font-size: 0.75rem; font-weight: 800; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .value-text { font-size: 1rem; font-weight: 600; color: #1f2937; }
+
+    /* 슬롯 정보 공백 해결 */
+    .pre-wrap { white-space: pre-wrap; word-break: break-all; display: block; }
+
+    /* 황금색 별 */
+    .star-gold { color: #FFD700; text-shadow: 0 0 8px rgba(255, 215, 0, 0.4); margin-left: 4px; }
+
+    /* 클러스터 상태 배지 스타일 */
+    .badge-switched { background-color: #0067B3 !important; color: white !important; }
+    .badge-switchless { background-color: #111827 !important; color: white !important; }
+</style>
+
+<div class="max-w-7xl mx-auto py-12 px-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+        <div class="animate-slide-up">
+            <nav class="flex mb-4">
+                <ol class="inline-flex items-center text-sm font-medium text-gray-500">
+                    <li>인벤토리</li>
+                    <li><i class="fa-solid fa-chevron-right text-[10px] mx-2"></i></li>
+                    <li class="text-blue-600 font-bold">{{ installbase.customer.name }}</li>
+                </ol>
+            </nav>
+            <h2 class="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-4">
+                <div id="detail-flag-display" class="flex-shrink-0 flex items-center justify-center w-[48px] h-[32px] overflow-hidden rounded shadow-sm border border-gray-100 bg-gray-50">
+                    <i class="fa-solid fa-earth-asia text-gray-200 text-xl"></i>
+                </div>
+                {{ installbase.cluster_name }}
+                {% if not is_multi_node %}
+                <span class="text-sm bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full font-bold">{{ installbase.product.model_name }}</span>
+                {% endif %}
+                    {% if installbase.customer.logo %}
+                <img src="{{ installbase.customer.logo.url }}" class="h-12 object-contain ml-2">
+                    {% endif %}
+            </h2>
+        </div>
+        <div class="flex gap-3 animate-slide-up">
+            <a href="{% url 'installbase_list' %}" class="px-6 py-3 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition text-sm">목록으로</a>
+            {% if not is_multi_node %}
+            <a href="{% url 'installbase_update' installbase.pk %}" class="px-6 py-3 bg-[#0067B3] text-white rounded-2xl font-bold shadow-lg shadow-blue-100 hover:translate-y-[-2px] transition text-sm text-center">정보 수정</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if is_multi_node %}
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-slide-up" style="animation-delay: 0.1s;">
+        <!-- 왼쪽: 노드 목록 -->
+        <div class="lg:col-span-2">
+            <div class="info-card bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 sticky top-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h4 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-sitemap text-blue-600"></i> Multinode Cluster
+                </h4>
+                    <span class="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-bold">{{ total_node_count }} 노드</span>
+                    </div>
+                        {% if installbase.cluster_mgmt_ip %}
+                <div class="mb-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                    <p class="text-xs font-bold text-gray-500 mb-1">Cluster Management IP</p>
+                    <p class="text-sm font-mono text-blue-700">{{ installbase.cluster_mgmt_ip }}</p>
+                    </div>
+                {% endif %}
+                <div class="space-y-3" id="node-list">
+                    {% for node in all_cluster_nodes %}
+                    <div class="node-item bg-white rounded-xl p-4 border-2 cursor-pointer transition-all relative group {% if node.pk == installbase.pk %}border-blue-500 bg-blue-50{% else %}border-gray-200 hover:border-blue-300{% endif %}" 
+                         data-node-pk="{{ node.pk }}" 
+                         onclick="selectNode({{ node.pk }})">
+                        <div class="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10" onclick="event.stopPropagation();">
+                            <a href="/installbase/{{ node.pk }}/update/" 
+                               class="inline-flex items-center justify-center w-7 h-7 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all shadow-sm text-xs"
+                               title="수정">
+                                <i class="fa-solid fa-pencil"></i>
+                            </a>
+                            <form method="POST" action="/installbase/{{ node.pk }}/delete/" class="inline" onsubmit="return confirm('정말로 이 노드를 삭제하시겠습니까?');" onclick="event.stopPropagation();">
+                                {% csrf_token %}
+                                <button type="submit" 
+                                        class="inline-flex items-center justify-center w-7 h-7 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all shadow-sm text-xs"
+                                        title="삭제">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                                    </div>
+                        <div class="space-y-2">
+                            <div class="flex flex-col gap-1">
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-bold text-gray-600">
+                                        {% if node.node_number_1 %}{{ node.node_number_1 }} 노드{% elif node.node_number_2 %}{{ node.node_number_2 }} 노드{% else %}{{ forloop.counter }} 노드{% endif %}
+                                    </span>
+                                    <span class="text-gray-400">/</span>
+                                    <span class="text-sm font-semibold text-gray-700">
+                                        {% if node.node_name_1 %}{{ node.node_name_1 }}{% elif node.node_name_2 %}{{ node.node_name_2 }}{% else %}-{% endif %}
+                                    </span>
+                                    </div>
+                                <div class="text-xs font-mono text-blue-600 pl-1">
+                                    Serial Number : {{ node.serial_number_1|default:"-" }}
+                                </div>
+                            </div>
+                            {% if node.serial_number_2 %}
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-bold text-gray-600">
+                                        {% if node.node_number_2 %}{{ node.node_number_2 }} 노드{% else %}N2{% endif %}
+                </span>
+                                    <span class="text-gray-400">/</span>
+                                    <span class="text-sm font-semibold text-gray-700">
+                                        {{ node.node_name_2|default:"-" }}
+                </span>
+            </div>
+                                <div class="text-xs font-mono text-blue-600 pl-1">
+                                    Serial Number : {{ node.serial_number_2 }}
+        </div>
+    </div>
+                            {% endif %}
+</div>
+                        </div>
+                        </div>
+                    {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+        <!-- 오른쪽: 선택된 노드 상세 정보 -->
+        <div class="lg:col-span-3 space-y-8" id="node-detail-content">
+            <!-- 동적으로 업데이트될 영역 - 초기에는 현재 노드 정보 표시 -->
+            <div id="node-detail-inner">
+                <!-- 노드 상세 정보가 여기에 동적으로 표시됩니다 -->
+                    </div>
+                </div>
+                    </div>
+    {% else %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-8 animate-slide-up" style="animation-delay: 0.1s;">
+
+            <div class="info-card flex flex-col md:flex-row gap-10 items-center overflow-hidden">
+                <div class="w-full md:w-1/3 flex justify-center">
+                    {% if installbase.product.image %}<img src="{{ installbase.product.image.url }}" class="w-full max-w-[240px] drop-shadow-2xl">
+                    {% else %}<div class="w-48 h-48 bg-gray-50 rounded-3xl flex items-center justify-center"><i class="fa-solid fa-box text-gray-200 text-6xl"></i></div>{% endif %}
+                </div>
+                <div class="flex-1 space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="label-text">ONTAP Version</p>
+                            <p class="text-2xl font-black text-gray-800">v{{ installbase.ontap_version }}</p>
+                        </div>
+                        <div>
+                            <p class="label-text">License Type</p>
+                            <p class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 uppercase italic">{{ installbase.license_type|default:"BASE" }}</p>
+                        </div>
+                        <div>
+                            <p class="label-text">Periodic Inspection</p>
+                            <p class="value-text flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500"></span>{{ installbase.get_periodic_inspection_display }}</p>
+                        </div>
+                    <div>
+                        <p class="label-text">Service Level</p>
+                        <p class="value-text font-bold text-blue-600 flex items-center">
+                            {{ installbase.get_service_level_display }}
+                            {% if installbase.service_level == '4HR_NRD' %}<i class="fa-solid fa-star star-gold"></i>{% endif %}
+                        </p>
+                    </div>
+                </div>
+                    {% if installbase.project %}
+                    <div>
+                        <p class="label-text">Project Name</p>
+                        <p class="value-text break-words">{{ installbase.project }}</p>
+            </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="info-card border-l-4 border-l-gray-800">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="w-10 h-10 bg-gray-800 text-white rounded-xl flex items-center justify-center font-black">1</span>
+                        <h4 class="font-bold text-gray-800">Node 1 Details</h4>
+                    </div>
+                    <div class="space-y-4">
+                        <div><p class="label-text">Node Name</p><p class="value-text">{{ installbase.node_name_1|default:"-" }}</p></div>
+                        <div><p class="label-text">Serial Number</p><p class="value-text font-mono tracking-tight text-blue-700">{{ installbase.serial_number_1 }}</p></div>
+                    </div>
+                </div>
+                <div class="info-card border-l-4 border-l-blue-400">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="w-10 h-10 bg-blue-400 text-white rounded-xl flex items-center justify-center font-black">2</span>
+                        <h4 class="font-bold text-gray-800">Node 2 Details</h4>
+                    </div>
+                    <div class="space-y-4">
+                        <div><p class="label-text">Node Name</p><p class="value-text">{{ installbase.node_name_2|default:"-" }}</p></div>
+                        <div><p class="label-text">Serial Number</p><p class="value-text font-mono tracking-tight text-blue-700">{{ installbase.serial_number_2|default:"-" }}</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card border-l-4 border-l-indigo-500 bg-indigo-50/30">
+                <h4 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-server text-indigo-500"></i> Controller Slot Details
+                </h4>
+                <div class="bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
+                    <p class="label-text text-indigo-400">구성 상세 정보</p>
+                    <div class="text-sm text-gray-700 leading-relaxed pre-wrap font-medium">{% if installbase.controller_slots %}{{ installbase.controller_slots }}{% else %}등록된 상세 슬롯 정보가 없습니다.{% endif %}</div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="flex justify-between items-start mb-8">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 bg-gray-100 text-gray-500 rounded-xl flex items-center justify-center">
+                            <i class="fa-solid fa-network-wired"></i>
+                        </span>
+                        <h4 class="text-xl font-bold text-gray-800">Network Infrastructure</h4>
+                    </div>
+                    {% if installbase.is_switch_connected %}
+                        <span class="px-4 py-1.5 badge-switched text-[10px] font-black rounded-lg uppercase tracking-wider shadow-sm">Switched</span>
+                    {% else %}
+                        <span class="px-4 py-1.5 badge-switchless text-[10px] font-black rounded-lg uppercase tracking-wider shadow-sm">Switchless</span>
+                    {% endif %}
+                </div>
+
+                {% if installbase.is_switch_connected %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
+                        <p class="text-[10px] font-black text-gray-400 mb-3">PRIMARY SWITCH</p>
+                        <div class="space-y-4">
+                            {% if installbase.cluster_switch and installbase.cluster_switch.switch_model_1 %}
+                                {% if installbase.cluster_switch.switch_model_1.front_image or installbase.cluster_switch.switch_model_1.back_image %}
+                                <div class="flex flex-col gap-2">
+                                {% if installbase.cluster_switch.switch_model_1.front_image %}
+                                    <img src="{{ installbase.cluster_switch.switch_model_1.front_image.url }}" alt="전면" class="w-full h-auto object-contain rounded-lg border border-gray-200">
+                                {% endif %}
+                                {% if installbase.cluster_switch.switch_model_1.back_image %}
+                                    <img src="{{ installbase.cluster_switch.switch_model_1.back_image.url }}" alt="후면" class="w-full h-auto object-contain rounded-lg border border-gray-200">
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% endif %}
+                            {% if installbase.cluster_switch %}
+                            <div><p class="label-text">Switch Name</p><p class="value-text">{{ installbase.cluster_switch.switch_name_1|default:"-" }}</p></div>
+                            <div><p class="label-text">Model</p><p class="value-text">{{ installbase.cluster_switch.switch_model_1.model_name|default:"-" }}</p></div>
+                            {% if installbase.cluster_switch.serial_number_1 %}<div><p class="label-text">Serial Number</p><p class="value-text font-mono text-sm">{{ installbase.cluster_switch.serial_number_1 }}</p></div>{% endif %}
+                            {% if installbase.cluster_switch.ip_address_1 %}<div><p class="label-text">IP Address</p><p class="value-text font-mono text-sm text-blue-600">{{ installbase.cluster_switch.ip_address_1 }}</p></div>{% endif %}
+                            {% else %}
+                            <div><p class="value-text">-</p></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
+                        <p class="text-[10px] font-black text-gray-400 mb-3">SECONDARY SWITCH</p>
+                        <div class="space-y-4">
+                            {% if installbase.cluster_switch and installbase.cluster_switch.switch_model_2 %}
+                                {% if installbase.cluster_switch.switch_model_2.front_image or installbase.cluster_switch.switch_model_2.back_image %}
+                                <div class="flex flex-col gap-2">
+                                {% if installbase.cluster_switch.switch_model_2.front_image %}
+                                    <img src="{{ installbase.cluster_switch.switch_model_2.front_image.url }}" alt="전면" class="w-full h-auto object-contain rounded-lg border border-gray-200">
+                                {% endif %}
+                                {% if installbase.cluster_switch.switch_model_2.back_image %}
+                                    <img src="{{ installbase.cluster_switch.switch_model_2.back_image.url }}" alt="후면" class="w-full h-auto object-contain rounded-lg border border-gray-200">
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% endif %}
+                            {% if installbase.cluster_switch %}
+                            <div><p class="label-text">Switch Name</p><p class="value-text">{{ installbase.cluster_switch.switch_name_2|default:"-" }}</p></div>
+                            <div><p class="label-text">Model</p><p class="value-text">{{ installbase.cluster_switch.switch_model_2.model_name|default:"-" }}</p></div>
+                            {% if installbase.cluster_switch.serial_number_2 %}<div><p class="label-text">Serial Number</p><p class="value-text font-mono text-sm">{{ installbase.cluster_switch.serial_number_2 }}</p></div>{% endif %}
+                            {% if installbase.cluster_switch.ip_address_2 %}<div><p class="label-text">IP Address</p><p class="value-text font-mono text-sm text-blue-600">{{ installbase.cluster_switch.ip_address_2 }}</p></div>{% endif %}
+                            {% else %}
+                            <div><p class="value-text">-</p></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="py-10 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                    <i class="fa-solid fa-circle-nodes text-gray-200 text-4xl mb-4"></i>
+                    <p class="text-sm text-gray-500 italic font-medium">No external cluster switches detected.<br>Operating in 2-node direct-connect mode.</p>
+                </div>
+                {% endif %}
+                {% if installbase.is_fabric_pool_connected and installbase.fabric_pool_switch %}
+                <div class="mt-8 pt-8 border-t border-gray-200">
+                    <h5 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-indigo-500"></i> Fabric Pool Switch
+                    </h5>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100">
+                            <p class="text-[10px] font-black text-indigo-400 mb-3">PRIMARY SWITCH</p>
+                            <div class="space-y-4">
+                                {% if installbase.fabric_pool_switch.switch_model_1 %}
+                                    {% if installbase.fabric_pool_switch.switch_model_1.front_image or installbase.fabric_pool_switch.switch_model_1.back_image %}
+                                    <div class="flex flex-col gap-2">
+                                        {% if installbase.fabric_pool_switch.switch_model_1.front_image %}
+                                        <img src="{{ installbase.fabric_pool_switch.switch_model_1.front_image.url }}" alt="전면" class="w-full h-auto object-contain rounded-lg border border-indigo-200">
+                                        {% endif %}
+                                        {% if installbase.fabric_pool_switch.switch_model_1.back_image %}
+                                        <img src="{{ installbase.fabric_pool_switch.switch_model_1.back_image.url }}" alt="후면" class="w-full h-auto object-contain rounded-lg border border-indigo-200">
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                {% endif %}
+                                <div><p class="label-text">Switch Name</p><p class="value-text">{{ installbase.fabric_pool_switch.switch_name_1|default:"-" }}</p></div>
+                                <div><p class="label-text">Model</p><p class="value-text">{{ installbase.fabric_pool_switch.switch_model_1.model_name|default:"-" }}</p></div>
+                                {% if installbase.fabric_pool_switch.serial_number_1 %}<div><p class="label-text">Serial Number</p><p class="value-text font-mono text-sm">{{ installbase.fabric_pool_switch.serial_number_1 }}</p></div>{% endif %}
+                                {% if installbase.fabric_pool_switch.ip_address_1 %}<div><p class="label-text">IP Address</p><p class="value-text font-mono text-sm text-blue-600">{{ installbase.fabric_pool_switch.ip_address_1 }}</p></div>{% endif %}
+                            </div>
+                        </div>
+                        <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100">
+                            <p class="text-[10px] font-black text-indigo-400 mb-3">SECONDARY SWITCH</p>
+                            <div class="space-y-4">
+                                {% if installbase.fabric_pool_switch.switch_model_2 %}
+                                    {% if installbase.fabric_pool_switch.switch_model_2.front_image or installbase.fabric_pool_switch.switch_model_2.back_image %}
+                                    <div class="flex flex-col gap-2">
+                                        {% if installbase.fabric_pool_switch.switch_model_2.front_image %}
+                                        <img src="{{ installbase.fabric_pool_switch.switch_model_2.front_image.url }}" alt="전면" class="w-full h-auto object-contain rounded-lg border border-indigo-200">
+                                        {% endif %}
+                                        {% if installbase.fabric_pool_switch.switch_model_2.back_image %}
+                                        <img src="{{ installbase.fabric_pool_switch.switch_model_2.back_image.url }}" alt="후면" class="w-full h-auto object-contain rounded-lg border border-indigo-200">
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                {% endif %}
+                                <div><p class="label-text">Switch Name</p><p class="value-text">{{ installbase.fabric_pool_switch.switch_name_2|default:"-" }}</p></div>
+                                <div><p class="label-text">Model</p><p class="value-text">{{ installbase.fabric_pool_switch.switch_model_2.model_name|default:"-" }}</p></div>
+                                {% if installbase.fabric_pool_switch.serial_number_2 %}<div><p class="label-text">Serial Number</p><p class="value-text font-mono text-sm">{{ installbase.fabric_pool_switch.serial_number_2 }}</p></div>{% endif %}
+                                {% if installbase.fabric_pool_switch.ip_address_2 %}<div><p class="label-text">IP Address</p><p class="value-text font-mono text-sm text-blue-600">{{ installbase.fabric_pool_switch.ip_address_2 }}</p></div>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="info-card">
+                <h4 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-microchip text-cyan-500"></i> Technical Specifications
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div>
+                        <p class="label-text">Install Country</p>
+                        <p class="value-text flex items-center gap-2">
+                            <span id="spec-flag-icon" class="inline-block w-5 h-3 overflow-hidden rounded-sm bg-gray-50"></span>
+                            {{ installbase.get_country_display|default:"-" }}
+                        </p>
+                    </div>
+                    <div><p class="label-text">Location / Rack</p><p class="value-text">{{ installbase.location|default:"-" }} / {{ installbase.rack_space|default:"-" }}</p></div>
+                    <div><p class="label-text">Shelf Models</p><p class="value-text">{{ installbase.shelf_models|default:"-" }}</p></div>
+                    <div class="md:col-span-3 pt-6 border-t border-gray-50">
+                        <p class="label-text">Disk Configuration</p>
+                        <p class="value-text text-sm leading-relaxed">{{ installbase.disk_info|linebreaksbr|default:"-" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-8 animate-slide-up" style="animation-delay: 0.2s;">
+            <div class="info-card bg-blue-50/50 border-blue-100">
+                <h4 class="text-lg font-bold text-blue-900 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-check text-blue-600"></i> Contract Timeline
+                </h4>
+                <div id="contract-timeline" class="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gray-200">
+                    {% if installbase.install_date %}
+                    <div class="pl-8 relative timeline-item" data-date="{{ installbase.install_date|date:'Y-m-d' }}" data-label="INSTALLATION DATE" data-color="blue">
+                        <div class="absolute left-0 top-1 w-6 h-6 bg-white border-2 border-blue-400 rounded-full flex items-center justify-center"><div class="w-2 h-2 bg-blue-400 rounded-full"></div></div>
+                        <p class="text-[10px] font-black text-blue-500 uppercase">INSTALLATION DATE</p>
+                        <p class="font-bold text-gray-800">{{ installbase.install_date|date:"Y-m-d" }}</p>
+                    </div>
+                    {% endif %}
+                    {% if installbase.contract_end_date %}
+                    <div class="pl-8 relative timeline-item" data-date="{{ installbase.contract_end_date|date:'Y-m-d' }}" data-label="CONTRACT END DATE" data-color="indigo">
+                        <div class="absolute left-0 top-1 w-6 h-6 bg-white border-2 border-indigo-400 rounded-full flex items-center justify-center"><div class="w-2 h-2 bg-indigo-400 rounded-full"></div></div>
+                        <p class="text-[10px] font-black text-indigo-500 uppercase">CONTRACT END DATE</p>
+                        <p class="font-bold text-gray-800">{{ installbase.contract_end_date|date:"Y-m-d" }}</p>
+                    </div>
+                    {% endif %}
+                    {% if installbase.maintenance_start %}
+                    <div class="pl-8 relative timeline-item" data-date="{{ installbase.maintenance_start|date:'Y-m-d' }}" data-label="MAINTENANCE START" data-color="green">
+                        <div class="absolute left-0 top-1 w-6 h-6 bg-white border-2 border-green-400 rounded-full flex items-center justify-center"><div class="w-2 h-2 bg-green-400 rounded-full"></div></div>
+                        <p class="text-[10px] font-black text-green-500 uppercase">MAINTENANCE START</p>
+                        <p class="font-bold text-gray-800">{{ installbase.maintenance_start|date:"Y-m-d" }}</p>
+                    </div>
+                    {% endif %}
+                    {% if installbase.maintenance_end %}
+                    <div class="pl-8 relative timeline-item" data-date="{{ installbase.maintenance_end|date:'Y-m-d' }}" data-label="MAINTENANCE END" data-color="purple">
+                        <div class="absolute left-0 top-1 w-6 h-6 bg-white border-2 border-purple-400 rounded-full flex items-center justify-center"><div class="w-2 h-2 bg-purple-400 rounded-full"></div></div>
+                        <p class="text-[10px] font-black text-purple-500 uppercase">MAINTENANCE END</p>
+                        <p class="font-bold text-gray-800">{{ installbase.maintenance_end|date:"Y-m-d" }}</p>
+                    </div>
+                    {% endif %}
+                    {% if not installbase.install_date and not installbase.contract_end_date and not installbase.maintenance_start and not installbase.maintenance_end %}
+                    <p class="text-sm text-gray-400 italic">등록된 타임라인 정보가 없습니다.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h4 class="text-sm font-black text-gray-400 uppercase mb-4">Assigned Engineers</h4>
+                <div class="flex flex-wrap gap-2">
+                    {% for engineer in installbase.assigned_engineers.all %}
+                        <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
+                            <div class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold">{{ engineer.username|slice:":1"|upper }}</div>
+                            <span class="text-xs font-bold text-gray-700">{{ engineer.last_name }}{{ engineer.first_name }}</span>
+                        </div>
+                    {% empty %}<p class="text-xs text-gray-400 italic">지정된 엔지니어가 없습니다.</p>{% endfor %}
+                </div>
+            </div>
+
+            <div class="info-card bg-gray-900 text-white border-none shadow-2xl">
+                <h4 class="text-sm font-black text-gray-500 uppercase mb-4 tracking-widest">Network</h4>
+                    <div class="space-y-4">
+                    {% if installbase.cluster_mgmt_ip %}
+                    <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                        <p class="label-text text-gray-500 mb-2">Cluster Management IP</p>
+                        <p class="text-sm font-mono text-cyan-400">{{ installbase.cluster_mgmt_ip }}</p>
+                        </div>
+                        {% endif %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% if installbase.node1_mgmt_ip %}
+                        <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                            <p class="label-text text-gray-500 mb-2">Node 1 Management IP</p>
+                            <p class="text-sm font-mono text-cyan-400">{{ installbase.node1_mgmt_ip }}</p>
+                    </div>
+                            {% endif %}
+                        {% if installbase.node2_mgmt_ip %}
+                        <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                            <p class="label-text text-gray-500 mb-2">Node 2 Management IP</p>
+                            <p class="text-sm font-mono text-cyan-400">{{ installbase.node2_mgmt_ip }}</p>
+                        </div>
+                        {% endif %}
+                        {% if installbase.node1_bmc_ip %}
+                        <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                            <p class="label-text text-gray-500 mb-2">Node 1 BMC IP</p>
+                            <p class="text-sm font-mono text-cyan-400">{{ installbase.node1_bmc_ip }}</p>
+                    </div>
+                            {% endif %}
+                        {% if installbase.node2_bmc_ip %}
+                        <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                            <p class="label-text text-gray-500 mb-2">Node 2 BMC IP</p>
+                            <p class="text-sm font-mono text-cyan-400">{{ installbase.node2_bmc_ip }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if installbase.other_ips %}
+                    <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                        <p class="label-text text-gray-500 mb-2">Other IPs</p>
+                        <p class="text-sm font-mono text-cyan-400 leading-relaxed">{{ installbase.other_ips|linebreaksbr }}</p>
+                </div>
+                            {% endif %}
+                    {% if not installbase.cluster_mgmt_ip and not installbase.node1_mgmt_ip and not installbase.node2_mgmt_ip and not installbase.node1_bmc_ip and not installbase.node2_bmc_ip and not installbase.other_ips %}
+                    <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700 text-center">
+                        <p class="text-sm text-gray-500 italic">등록된 IP 정보가 없습니다.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-12 animate-slide-up" style="animation-delay: 0.3s;">
+        <div class="info-card">
+            <div class="flex justify-between items-center mb-8">
+                <h4 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-blue-500"></i> 장비 증설 및 점검 이력
+                </h4>
+                <button onclick="toggleExpansionForm()" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700 transition">이력 추가</button>
+            </div>
+
+            <div id="expansionForm" class="hidden mb-8 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                <div class="space-y-4">
+                    <div class="flex flex-col w-48"><label class="label-text">증설 날짜</label><input type="date" id="expDate" class="p-3 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                    {% if is_multi_node %}
+                    <div class="flex flex-col">
+                        <label class="label-text">노드 선택</label>
+                        <select id="expNodeId" class="p-3 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                            {% for node in all_cluster_nodes %}
+                            <option value="{{ node.pk }}" {% if node.pk == installbase.pk %}selected{% endif %}>
+                                {% if node.node_number_1 %}노드{{ node.node_number_1 }}{% elif node.node_number_2 %}노드{{ node.node_number_2 }}{% else %}노드{{ forloop.counter }}{% endif %}
+                                {% if node.node_name_1 %} - {{ node.node_name_1 }}{% elif node.node_name_2 %} - {{ node.node_name_2 }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    <div class="flex flex-col"><label class="label-text">증설 상세 내용</label><textarea id="expDesc" rows="3" class="w-full p-4 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea></div>
+                    <div class="flex justify-end gap-3"><button onclick="toggleExpansionForm()" class="px-6 py-2.5 bg-gray-200 text-gray-600 rounded-xl font-bold text-sm">취소</button><button onclick="submitExpansion()" class="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm">저장</button></div>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-2xl border border-gray-50">
+                <table class="w-full text-left table-fixed">
+                    <thead class="bg-gray-50 text-gray-400 uppercase text-[10px] font-black tracking-widest">
+                        <tr>
+                            <th class="py-4 px-6 w-40">증설 날짜</th>
+                            <th class="py-4 px-6" style="min-width: 44px;">노드</th>
+                            <th class="py-4 px-6">증설 상세 내용</th>
+                            <th class="py-4 px-6 w-24 text-right">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expansionTableBody" class="divide-y divide-gray-50 text-sm">
+                        {% for exp in expansions %}
+                        <tr class="history-row group hover:bg-gray-50/50 transition" id="exp-row-{{ exp.id }}">
+                            <td class="py-4 px-6 font-bold text-gray-600 exp-date-cell align-top">{{ exp.expansion_date|date:"Y-m-d" }}</td>
+                            <td class="py-4 px-6 text-gray-700 align-top" style="min-width: 44px; white-space: nowrap;">
+                                <div class="flex flex-col gap-1">
+                                    {% if exp.install_base.node_name_1 %}
+                                    <span class="text-xs font-semibold whitespace-nowrap">{{ exp.install_base.node_name_1 }}</span>
+                                    {% endif %}
+                                    {% if exp.install_base.node_name_2 %}
+                                    <span class="text-xs font-semibold whitespace-nowrap">{{ exp.install_base.node_name_2 }}</span>
+                                    {% endif %}
+                                    {% if not exp.install_base.node_name_1 and not exp.install_base.node_name_2 %}
+                                    <span class="text-xs text-gray-400">-</span>
+                            {% endif %}
+                                </div>
+                            </td>
+                            <td class="py-4 px-6 text-gray-700 exp-desc-cell pre-wrap align-top break-words">{{ exp.description }}</td>
+                            <td class="py-4 px-6 text-right align-top"><button onclick="enableEdit('{{ exp.id }}')" class="text-blue-500 font-bold text-xs uppercase">Edit</button></td>
+                        </tr>
+                        {% empty %}
+                        <tr id="emptyRow"><td colspan="4" class="py-12 text-center text-gray-400 italic>등록된 증설 이력이 없습니다.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+            {% if is_multi_node %}
+    // 노드 데이터
+    const nodesData = {{ nodes_data_json|safe }};
+    let selectedNodePk = {{ installbase.pk }};
+    
+    // 초기 로드 시 현재 노드 정보 표시
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentNode = nodesData.find(n => n.pk === {{ installbase.pk }});
+        if (currentNode) {
+            updateNodeDetail(currentNode);
+        }
+    });
+    
+    // 노드 선택 함수
+    function selectNode(nodePk) {
+        selectedNodePk = nodePk;
+        const node = nodesData.find(n => n.pk === nodePk);
+        if (!node) return;
+        
+        // 노드 목록 UI 업데이트
+        document.querySelectorAll('.node-item').forEach(item => {
+            const itemPk = parseInt(item.getAttribute('data-node-pk'));
+            if (itemPk === nodePk) {
+                item.classList.add('border-blue-500', 'bg-blue-50');
+                item.classList.remove('border-gray-200');
+                } else {
+                item.classList.remove('border-blue-500', 'bg-blue-50');
+                item.classList.add('border-gray-200');
+            }
+        });
+        
+        // 노드 상세 정보 업데이트
+        updateNodeDetail(node);
+    }
+    
+    // 노드 상세 정보 업데이트 함수
+    function updateNodeDetail(node) {
+        const detailContainer = document.getElementById('node-detail-inner');
+        const countryCodeMap = {
+            'KOREA': 'kr', 'SOUTH KOREA': 'kr', 'REPUBLIC OF KOREA': 'kr', 'KR': 'kr', '한국': 'kr', '대한민국': 'kr',
+            'USA': 'us', 'UNITED STATES': 'us', 'US': 'us', '미국': 'us',
+            'JAPAN': 'jp', 'JP': 'jp', '일본': 'jp',
+            'CHINA': 'cn', 'CN': 'cn', '중국': 'cn',
+            'GERMANY': 'de', 'DE': 'de', '독일': 'de',
+            'VIETNAM': 'vn', 'VN': 'vn', '베트남': 'vn',
+            'SINGAPORE': 'sg', 'SG': 'sg', '싱가포르': 'sg',
+            'INDIA': 'in', 'IN': 'in', '인도': 'in',
+            'SLOVAKIA': 'sk', 'SK': 'sk', '슬로바키아': 'sk',
+            'UNITED KINGDOM': 'gb', 'UK': 'gb', 'GB': 'gb', '영국': 'gb',
+            'FRANCE': 'fr', 'FR': 'fr', '프랑스': 'fr',
+            'ITALY': 'it', 'IT': 'it', '이탈리아': 'it',
+            'SPAIN': 'es', 'ES': 'es', '스페인': 'es',
+            'NETHERLANDS': 'nl', 'NL': 'nl', '네덜란드': 'nl',
+            'BELGIUM': 'be', 'BE': 'be', '벨기에': 'be',
+            'SWITZERLAND': 'ch', 'CH': 'ch', '스위스': 'ch',
+            'AUSTRIA': 'at', 'AT': 'at', '오스트리아': 'at',
+            'POLAND': 'pl', 'PL': 'pl', '폴란드': 'pl',
+            'CZECH REPUBLIC': 'cz', 'CZ': 'cz', '체코': 'cz',
+            'HUNGARY': 'hu', 'HU': 'hu', '헝가리': 'hu',
+            'ROMANIA': 'ro', 'RO': 'ro', '루마니아': 'ro',
+            'BULGARIA': 'bg', 'BG': 'bg', '불가리아': 'bg',
+            'GREECE': 'gr', 'GR': 'gr', '그리스': 'gr',
+            'PORTUGAL': 'pt', 'PT': 'pt', '포르투갈': 'pt',
+            'DENMARK': 'dk', 'DK': 'dk', '덴마크': 'dk',
+            'SWEDEN': 'se', 'SE': 'se', '스웨덴': 'se',
+            'NORWAY': 'no', 'NO': 'no', '노르웨이': 'no',
+            'FINLAND': 'fi', 'FI': 'fi', '핀란드': 'fi',
+            'IRELAND': 'ie', 'IE': 'ie', '아일랜드': 'ie',
+            'AUSTRALIA': 'au', 'AU': 'au', '호주': 'au',
+            'NEW ZEALAND': 'nz', 'NZ': 'nz', '뉴질랜드': 'nz',
+            'CANADA': 'ca', 'CA': 'ca', '캐나다': 'ca',
+            'MEXICO': 'mx', 'MX': 'mx', '멕시코': 'mx',
+            'BRAZIL': 'br', 'BR': 'br', '브라질': 'br',
+            'ARGENTINA': 'ar', 'AR': 'ar', '아르헨티나': 'ar',
+            'CHILE': 'cl', 'CL': 'cl', '칠레': 'cl',
+            'SOUTH AFRICA': 'za', 'ZA': 'za', '남아프리카': 'za',
+            'EGYPT': 'eg', 'EG': 'eg', '이집트': 'eg',
+            'ISRAEL': 'il', 'IL': 'il', '이스라엘': 'il',
+            'TURKEY': 'tr', 'TR': 'tr', '터키': 'tr',
+            'SAUDI ARABIA': 'sa', 'SA': 'sa', '사우디아라비아': 'sa',
+            'UNITED ARAB EMIRATES': 'ae', 'UAE': 'ae', 'AE': 'ae', '아랍에미리트': 'ae',
+            'THAILAND': 'th', 'TH': 'th', '태국': 'th',
+            'MALAYSIA': 'my', 'MY': 'my', '말레이시아': 'my',
+            'INDONESIA': 'id', 'ID': 'id', '인도네시아': 'id',
+            'PHILIPPINES': 'ph', 'PH': 'ph', '필리핀': 'ph',
+            'TAIWAN': 'tw', 'TW': 'tw', '대만': 'tw',
+            'HONG KONG': 'hk', 'HK': 'hk', '홍콩': 'hk',
+            'SOUTH KOREA': 'kr'
+        };
+        const countryUpper = (node.country || '').toUpperCase().trim();
+        const code = countryCodeMap[countryUpper] || '';
+        const flagHtml = code ? `<img src="https://flagcdn.com/w80/${code}.png" class="w-full h-full object-cover">` : '';
+        
+        const serviceLevelStar = node.service_level === '4HR_NRD' ? '<i class="fa-solid fa-star star-gold"></i>' : '';
+        const periodicDot = node.periodic_inspection ? '<span class="w-2 h-2 rounded-full bg-green-500"></span>' : '';
+        
+        const productImageHtml = node.product_image_url ? 
+            `<img src="${node.product_image_url}" class="w-full max-w-[240px] drop-shadow-2xl">` : 
+            `<div class="w-48 h-48 bg-gray-50 rounded-3xl flex items-center justify-center"><i class="fa-solid fa-box text-gray-200 text-6xl"></i></div>`;
+        
+        detailContainer.innerHTML = `
+            <div class="info-card flex flex-col gap-8 overflow-hidden">
+                <div class="flex flex-col items-center gap-4">
+                    ${productImageHtml}
+                    <p class="text-lg font-bold text-gray-800">${node.product_model_name || '-'}</p>
+            </div>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="label-text">ONTAP Version</p>
+                            <p class="text-2xl font-black text-gray-800">v${node.ontap_version || '-'}</p>
+        </div>
+                        <div>
+                            <p class="label-text">License Type</p>
+                            <p class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 uppercase italic">${node.license_type || 'BASE'}</p>
+        </div>
+                        <div>
+                            <p class="label-text">Service Level</p>
+                            <p class="value-text font-bold text-blue-600 flex items-center">${node.service_level_display || '-'} ${serviceLevelStar}</p>
+    </div>
+                        <div>
+                            <p class="label-text">Periodic Inspection</p>
+                            <p class="value-text flex items-center gap-2">${periodicDot}${node.periodic_inspection_display || '-'}</p>
+</div>
+            </div>
+                    ${node.project ? `
+                    <div>
+                        <p class="label-text">Project Name</p>
+                        <p class="value-text break-words" style="word-break: break-word; overflow-wrap: break-word;">${node.project}</p>
+        </div>
+                    ` : ''}
+    </div>
+</div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="info-card border-l-4 border-l-gray-800">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="w-10 h-10 bg-gray-800 text-white rounded-xl flex items-center justify-center font-black">${node.node_number_1 || '1'}</span>
+                        <h4 class="font-bold text-gray-800">Node ${node.node_number_1 || '1'} Details</h4>
+            </div>
+                    <div class="space-y-4">
+                        <div><p class="label-text">Node Name</p><p class="value-text">${node.node_name_1 || '-'}</p></div>
+                        <div><p class="label-text">Serial Number</p><p class="value-text font-mono tracking-tight text-blue-700">${node.serial_number_1 || '-'}</p></div>
+        </div>
+        </div>
+                <div class="info-card border-l-4 border-l-blue-400">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="w-10 h-10 bg-blue-400 text-white rounded-xl flex items-center justify-center font-black">${node.node_number_2 || '2'}</span>
+                        <h4 class="font-bold text-gray-800">Node ${node.node_number_2 || '2'} Details</h4>
+    </div>
+                    <div class="space-y-4">
+                        <div><p class="label-text">Node Name</p><p class="value-text">${node.node_name_2 || '-'}</p></div>
+                        <div><p class="label-text">Serial Number</p><p class="value-text font-mono tracking-tight text-blue-700">${node.serial_number_2 || '-'}</p></div>
+</div>
+    </div>
+</div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="info-card bg-blue-50/50 border-blue-100">
+                    <h4 class="text-lg font-bold text-blue-900 mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-check text-blue-600"></i> Contract Timeline
+                    </h4>
+                    ${(() => {
+                        const timelineItems = [];
+                        if (node.install_date) {
+                            timelineItems.push({
+                                date: node.install_date,
+                                label: 'INSTALLATION DATE',
+                                borderColor: 'border-blue-400',
+                                textColor: 'text-blue-500',
+                                dotColor: 'bg-blue-400'
+                            });
+                        }
+                        if (node.contract_end_date) {
+                            timelineItems.push({
+                                date: node.contract_end_date,
+                                label: 'CONTRACT END DATE',
+                                borderColor: 'border-indigo-400',
+                                textColor: 'text-indigo-500',
+                                dotColor: 'bg-indigo-400'
+                            });
+                        }
+                        if (node.maintenance_start) {
+                            timelineItems.push({
+                                date: node.maintenance_start,
+                                label: 'MAINTENANCE START',
+                                borderColor: 'border-green-400',
+                                textColor: 'text-green-500',
+                                dotColor: 'bg-green-400'
+                            });
+                        }
+                        if (node.maintenance_end) {
+                            timelineItems.push({
+                                date: node.maintenance_end,
+                                label: 'MAINTENANCE END',
+                                borderColor: 'border-purple-400',
+                                textColor: 'text-purple-500',
+                                dotColor: 'bg-purple-400'
+                            });
+                        }
+                        // 날짜별로 정렬 (INSTALLATION DATE는 항상 첫 번째)
+                        timelineItems.sort((a, b) => {
+                            if (a.label === 'INSTALLATION DATE') return -1;
+                            if (b.label === 'INSTALLATION DATE') return 1;
+                            return new Date(a.date) - new Date(b.date);
+                        });
+                        if (timelineItems.length === 0) {
+                            return '<p class="text-sm text-gray-400 italic">등록된 타임라인 정보가 없습니다.</p>';
+                        }
+                        return '<div class="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gray-200">' +
+                            timelineItems.map((item, idx) => `
+                                <div class="pl-8 relative" style="margin-top: ${idx === 0 ? '0' : '1.5rem'}">
+                                    <div class="absolute left-0 top-1 w-6 h-6 bg-white border-2 ${item.borderColor} rounded-full flex items-center justify-center">
+                                        <div class="w-2 h-2 ${item.dotColor} rounded-full"></div>
+                                    </div>
+                                    <p class="text-[10px] font-black ${item.textColor} uppercase">${item.label}</p>
+                                    <p class="font-bold text-gray-800">${item.date}</p>
+                                </div>
+                            `).join('') + '</div>';
+                    })()}
+                </div>
+                
+                <div class="info-card">
+                    <h4 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-users text-gray-600"></i> Assigned Engineers
+                    </h4>
+                    <div class="flex flex-wrap gap-2">
+                        ${node.assigned_engineers && node.assigned_engineers.length > 0 ? 
+                            node.assigned_engineers.map(e => `
+                                <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
+                                    <div class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold">${(e.username || '').charAt(0).toUpperCase()}</div>
+                                    <span class="text-xs font-bold text-gray-700">${e.last_name || ''}${e.first_name || ''}</span>
+                                </div>
+                            `).join('') : 
+                            '<p class="text-xs text-gray-400 italic">지정된 엔지니어가 없습니다.</p>'
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-card border-l-4 border-l-indigo-500 bg-indigo-50/30">
+                <h4 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-server text-indigo-500"></i> Controller Slot Details
+                </h4>
+                <div class="bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
+                    <p class="label-text text-indigo-400">구성 상세 정보</p>
+                    <div class="text-sm text-gray-700 leading-relaxed pre-wrap font-medium">${node.controller_slots || '등록된 상세 슬롯 정보가 없습니다.'}</div>
+            </div>
+        </div>
+            
+            <div class="info-card">
+                <div class="flex justify-between items-start mb-8">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 bg-gray-100 text-gray-500 rounded-xl flex items-center justify-center">
+                            <i class="fa-solid fa-network-wired"></i>
+                        </span>
+                        <h4 class="text-xl font-bold text-gray-800">Network Infrastructure</h4>
+                    </div>
+                    <span class="px-4 py-1.5 ${node.is_switch_connected ? 'badge-switched' : 'badge-switchless'} text-[10px] font-black rounded-lg uppercase tracking-wider shadow-sm">${node.is_switch_connected ? 'Switched' : 'Switchless'}</span>
+                </div>
+                ${node.is_fabric_pool_connected ? `
+                <div class="mt-8 pt-8 border-t border-gray-200">
+                    <h5 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-indigo-500"></i> Fabric Pool Switch
+                    </h5>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100">
+                            <p class="text-[10px] font-black text-indigo-400 mb-3">PRIMARY SWITCH</p>
+                            <div class="space-y-4">
+                                ${node.fabric_pool_switch_front_image_1 || node.fabric_pool_switch_back_image_1 ? `
+                                <div class="flex flex-col gap-2">
+                                    ${node.fabric_pool_switch_front_image_1 ? `<img src="${node.fabric_pool_switch_front_image_1}" alt="전면" class="w-full h-auto object-contain rounded-lg border border-indigo-200">` : ''}
+                                    ${node.fabric_pool_switch_back_image_1 ? `<img src="${node.fabric_pool_switch_back_image_1}" alt="후면" class="w-full h-auto object-contain rounded-lg border border-indigo-200">` : ''}
+                </div>
+                    ` : ''}
+                                <div><p class="label-text">Switch Name</p><p class="value-text">${node.fabric_pool_switch_name_1 || '-'}</p></div>
+                                <div><p class="label-text">Model</p><p class="value-text">${node.fabric_pool_switch_model_1 || '-'}</p></div>
+                                ${node.fabric_pool_switch_serial_1 ? `<div><p class="label-text">Serial Number</p><p class="value-text font-mono text-sm">${node.fabric_pool_switch_serial_1}</p></div>` : ''}
+                                ${node.fabric_pool_switch_ip_1 ? `<div><p class="label-text">IP Address</p><p class="value-text font-mono text-sm text-blue-600">${node.fabric_pool_switch_ip_1}</p></div>` : ''}
+                    </div>
+                        </div>
+                        <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100">
+                            <p class="text-[10px] font-black text-indigo-400 mb-3">SECONDARY SWITCH</p>
+                            <div class="space-y-4">
+                                ${node.fabric_pool_switch_front_image_2 || node.fabric_pool_switch_back_image_2 ? `
+                                <div class="flex flex-col gap-2">
+                                    ${node.fabric_pool_switch_front_image_2 ? `<img src="${node.fabric_pool_switch_front_image_2}" alt="전면" class="w-full h-auto object-contain rounded-lg border border-indigo-200">` : ''}
+                                    ${node.fabric_pool_switch_back_image_2 ? `<img src="${node.fabric_pool_switch_back_image_2}" alt="후면" class="w-full h-auto object-contain rounded-lg border border-indigo-200">` : ''}
+                    </div>
+                    ` : ''}
+                                <div><p class="label-text">Switch Name</p><p class="value-text">${node.fabric_pool_switch_name_2 || '-'}</p></div>
+                                <div><p class="label-text">Model</p><p class="value-text">${node.fabric_pool_switch_model_2 || '-'}</p></div>
+                                ${node.fabric_pool_switch_serial_2 ? `<div><p class="label-text">Serial Number</p><p class="value-text font-mono text-sm">${node.fabric_pool_switch_serial_2}</p></div>` : ''}
+                                ${node.fabric_pool_switch_ip_2 ? `<div><p class="label-text">IP Address</p><p class="value-text font-mono text-sm text-blue-600">${node.fabric_pool_switch_ip_2}</p></div>` : ''}
+                    </div>
+                        </div>
+                    </div>
+                    </div>
+                    ` : ''}
+                ${node.is_switch_connected ? `
+                <div class="${node.is_fabric_pool_connected ? 'mt-8 pt-8 border-t border-gray-200' : ''}">
+                    <h5 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired text-purple-500"></i> Cluster Switch
+                    </h5>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-purple-50/50 p-5 rounded-2xl border border-purple-100">
+                            <p class="text-[10px] font-black text-purple-400 mb-3">PRIMARY SWITCH</p>
+                            <div class="space-y-4">
+                                ${node.cluster_switch_front_image_1 || node.cluster_switch_back_image_1 ? `
+                                <div class="flex flex-col gap-2">
+                                    ${node.cluster_switch_front_image_1 ? `<img src="${node.cluster_switch_front_image_1}" alt="전면" class="w-full h-auto object-contain rounded-lg border border-purple-200">` : ''}
+                                    ${node.cluster_switch_back_image_1 ? `<img src="${node.cluster_switch_back_image_1}" alt="후면" class="w-full h-auto object-contain rounded-lg border border-purple-200">` : ''}
+                </div>
+                                ` : ''}
+                                <div><p class="label-text">Switch Name</p><p class="value-text">${node.cluster_switch_name_1 || '-'}</p></div>
+                                <div><p class="label-text">Model</p><p class="value-text">${node.cluster_switch_model_1 || '-'}</p></div>
+                                ${node.cluster_switch_serial_1 ? `<div><p class="label-text">Serial Number</p><p class="value-text font-mono text-sm">${node.cluster_switch_serial_1}</p></div>` : ''}
+                                ${node.cluster_switch_ip_1 ? `<div><p class="label-text">IP Address</p><p class="value-text font-mono text-sm text-blue-600">${node.cluster_switch_ip_1}</p></div>` : ''}
+                    </div>
+                    </div>
+                        <div class="bg-purple-50/50 p-5 rounded-2xl border border-purple-100">
+                            <p class="text-[10px] font-black text-purple-400 mb-3">SECONDARY SWITCH</p>
+                            <div class="space-y-4">
+                                ${node.cluster_switch_front_image_2 || node.cluster_switch_back_image_2 ? `
+                                <div class="flex flex-col gap-2">
+                                    ${node.cluster_switch_front_image_2 ? `<img src="${node.cluster_switch_front_image_2}" alt="전면" class="w-full h-auto object-contain rounded-lg border border-purple-200">` : ''}
+                                    ${node.cluster_switch_back_image_2 ? `<img src="${node.cluster_switch_back_image_2}" alt="후면" class="w-full h-auto object-contain rounded-lg border border-purple-200">` : ''}
+                </div>
+                                ` : ''}
+                                <div><p class="label-text">Switch Name</p><p class="value-text">${node.cluster_switch_name_2 || '-'}</p></div>
+                                <div><p class="label-text">Model</p><p class="value-text">${node.cluster_switch_model_2 || '-'}</p></div>
+                                ${node.cluster_switch_serial_2 ? `<div><p class="label-text">Serial Number</p><p class="value-text font-mono text-sm">${node.cluster_switch_serial_2}</p></div>` : ''}
+                                ${node.cluster_switch_ip_2 ? `<div><p class="label-text">IP Address</p><p class="value-text font-mono text-sm text-blue-600">${node.cluster_switch_ip_2}</p></div>` : ''}
+        </div>
+        </div>
+    </div>
+                </div>
+                ` : ''}
+</div>
+
+            <div class="info-card bg-gray-900 text-white border-none shadow-2xl">
+                <h4 class="text-sm font-black text-gray-500 uppercase mb-4 tracking-widest">Network</h4>
+                <div class="space-y-4">
+                    ${node.cluster_mgmt_ip ? `
+                    <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                        <p class="label-text text-gray-500 mb-2">Cluster Management IP</p>
+                        <p class="text-sm font-mono text-cyan-400">${node.cluster_mgmt_ip}</p>
+        </div>
+                    ` : ''}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${node.node1_mgmt_ip ? `
+                        <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                            <p class="label-text text-gray-500 mb-2">Node 1 Management IP</p>
+                            <p class="text-sm font-mono text-cyan-400">${node.node1_mgmt_ip}</p>
+            </div>
+                        ` : ''}
+                        ${node.node2_mgmt_ip ? `
+                        <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                            <p class="label-text text-gray-500 mb-2">Node 2 Management IP</p>
+                            <p class="text-sm font-mono text-cyan-400">${node.node2_mgmt_ip}</p>
+            </div>
+                        ` : ''}
+                        ${node.node1_bmc_ip ? `
+                        <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                            <p class="label-text text-gray-500 mb-2">Node 1 BMC IP</p>
+                            <p class="text-sm font-mono text-cyan-400">${node.node1_bmc_ip}</p>
+            </div>
+                        ` : ''}
+                        ${node.node2_bmc_ip ? `
+                        <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                            <p class="label-text text-gray-500 mb-2">Node 2 BMC IP</p>
+                            <p class="text-sm font-mono text-cyan-400">${node.node2_bmc_ip}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ${node.other_ips ? `
+                    <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                        <p class="label-text text-gray-500 mb-2">Other IPs</p>
+                        <p class="text-sm font-mono text-cyan-400 leading-relaxed">${(node.other_ips || '').replace(/\n/g, '<br>')}</p>
+                    </div>
+                    ` : ''}
+                    ${!node.cluster_mgmt_ip && !node.node1_mgmt_ip && !node.node2_mgmt_ip && !node.node1_bmc_ip && !node.node2_bmc_ip && !node.other_ips ? `
+                    <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700 text-center">
+                        <p class="text-sm text-gray-500 italic">등록된 IP 정보가 없습니다.</p>
+                    </div>
+                    ` : ''}
+    </div>
+</div>
+
+        `;
+    }
+    
+    // 초기 로드 시 현재 노드 정보 표시
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentNode = nodesData.find(n => n.pk === {{ installbase.pk }});
+        if (currentNode) {
+            updateNodeDetail(currentNode);
+        }
+    });
+    {% endif %}
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const countryCodeMap = {
+            'KOREA': 'kr', 'SOUTH KOREA': 'kr', 'REPUBLIC OF KOREA': 'kr', 'KR': 'kr', '한국': 'kr', '대한민국': 'kr',
+            'USA': 'us', 'UNITED STATES': 'us', 'US': 'us', '미국': 'us',
+            'JAPAN': 'jp', 'JP': 'jp', '일본': 'jp',
+            'CHINA': 'cn', 'CN': 'cn', '중국': 'cn',
+            'GERMANY': 'de', 'DE': 'de', '독일': 'de',
+            'VIETNAM': 'vn', 'VN': 'vn', '베트남': 'vn',
+            'SINGAPORE': 'sg', 'SG': 'sg', '싱가포르': 'sg',
+            'INDIA': 'in', 'IN': 'in', '인도': 'in',
+            'SLOVAKIA': 'sk', 'SK': 'sk', '슬로바키아': 'sk',
+            'UNITED KINGDOM': 'gb', 'UK': 'gb', 'GB': 'gb', '영국': 'gb',
+            'FRANCE': 'fr', 'FR': 'fr', '프랑스': 'fr',
+            'ITALY': 'it', 'IT': 'it', '이탈리아': 'it',
+            'SPAIN': 'es', 'ES': 'es', '스페인': 'es',
+            'NETHERLANDS': 'nl', 'NL': 'nl', '네덜란드': 'nl',
+            'BELGIUM': 'be', 'BE': 'be', '벨기에': 'be',
+            'SWITZERLAND': 'ch', 'CH': 'ch', '스위스': 'ch',
+            'AUSTRIA': 'at', 'AT': 'at', '오스트리아': 'at',
+            'POLAND': 'pl', 'PL': 'pl', '폴란드': 'pl',
+            'CZECH REPUBLIC': 'cz', 'CZ': 'cz', '체코': 'cz',
+            'HUNGARY': 'hu', 'HU': 'hu', '헝가리': 'hu',
+            'ROMANIA': 'ro', 'RO': 'ro', '루마니아': 'ro',
+            'BULGARIA': 'bg', 'BG': 'bg', '불가리아': 'bg',
+            'GREECE': 'gr', 'GR': 'gr', '그리스': 'gr',
+            'PORTUGAL': 'pt', 'PT': 'pt', '포르투갈': 'pt',
+            'DENMARK': 'dk', 'DK': 'dk', '덴마크': 'dk',
+            'SWEDEN': 'se', 'SE': 'se', '스웨덴': 'se',
+            'NORWAY': 'no', 'NO': 'no', '노르웨이': 'no',
+            'FINLAND': 'fi', 'FI': 'fi', '핀란드': 'fi',
+            'IRELAND': 'ie', 'IE': 'ie', '아일랜드': 'ie',
+            'AUSTRALIA': 'au', 'AU': 'au', '호주': 'au',
+            'NEW ZEALAND': 'nz', 'NZ': 'nz', '뉴질랜드': 'nz',
+            'CANADA': 'ca', 'CA': 'ca', '캐나다': 'ca',
+            'MEXICO': 'mx', 'MX': 'mx', '멕시코': 'mx',
+            'BRAZIL': 'br', 'BR': 'br', '브라질': 'br',
+            'ARGENTINA': 'ar', 'AR': 'ar', '아르헨티나': 'ar',
+            'CHILE': 'cl', 'CL': 'cl', '칠레': 'cl',
+            'SOUTH AFRICA': 'za', 'ZA': 'za', '남아프리카': 'za',
+            'EGYPT': 'eg', 'EG': 'eg', '이집트': 'eg',
+            'ISRAEL': 'il', 'IL': 'il', '이스라엘': 'il',
+            'TURKEY': 'tr', 'TR': 'tr', '터키': 'tr',
+            'SAUDI ARABIA': 'sa', 'SA': 'sa', '사우디아라비아': 'sa',
+            'UNITED ARAB EMIRATES': 'ae', 'UAE': 'ae', 'AE': 'ae', '아랍에미리트': 'ae',
+            'THAILAND': 'th', 'TH': 'th', '태국': 'th',
+            'MALAYSIA': 'my', 'MY': 'my', '말레이시아': 'my',
+            'INDONESIA': 'id', 'ID': 'id', '인도네시아': 'id',
+            'PHILIPPINES': 'ph', 'PH': 'ph', '필리핀': 'ph',
+            'TAIWAN': 'tw', 'TW': 'tw', '대만': 'tw',
+            'HONG KONG': 'hk', 'HK': 'hk', '홍콩': 'hk'
+        };
+        const rawCountry = "{{ installbase.country|default:'' }}".toUpperCase().trim();
+        const code = countryCodeMap[rawCountry];
+        if (code) {
+            const flagBase = `https://flagcdn.com/w80/${code}.png`;
+            if (document.getElementById('detail-flag-display')) document.getElementById('detail-flag-display').innerHTML = `<img src="${flagBase}" class="w-full h-full object-cover">`;
+            if (document.getElementById('spec-flag-icon')) document.getElementById('spec-flag-icon').innerHTML = `<img src="${flagBase}" class="w-full h-full object-cover">`;
+        }
+
+        window.toggleExpansionForm = function() { document.getElementById('expansionForm').classList.toggle('hidden'); };
+        
+        // Contract Timeline 날짜별 정렬 (일반 뷰)
+        {% if not is_multi_node %}
+        document.addEventListener('DOMContentLoaded', function() {
+            const timelineContainer = document.getElementById('contract-timeline');
+            if (timelineContainer) {
+                const items = Array.from(timelineContainer.querySelectorAll('.timeline-item'));
+                if (items.length > 0) {
+                    // INSTALLATION DATE는 항상 첫 번째, 나머지는 날짜순 정렬
+                    items.sort((a, b) => {
+                        const aLabel = a.getAttribute('data-label');
+                        const bLabel = b.getAttribute('data-label');
+                        if (aLabel === 'INSTALLATION DATE') return -1;
+                        if (bLabel === 'INSTALLATION DATE') return 1;
+                        return new Date(a.getAttribute('data-date')) - new Date(b.getAttribute('data-date'));
+                    });
+                    items.forEach(item => timelineContainer.appendChild(item));
+                }
+            }
+        });
+        {% endif %}
+        
+        window.submitExpansion = function() {
+            const date = document.getElementById('expDate').value;
+            const description = document.getElementById('expDesc').value;
+            if (!date || !description) return;
+            const nodeId = document.getElementById('expNodeId') ? document.getElementById('expNodeId').value : null;
+            const bodyParams = `date=${encodeURIComponent(date)}&description=${encodeURIComponent(description)}${nodeId ? '&node_id=' + encodeURIComponent(nodeId) : ''}`;
+            fetch("{% url 'add_expansion_ajax' installbase.pk %}", {
+                method: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/x-www-form-urlencoded" },
+                body: bodyParams
+            }).then(res => res.json()).then(data => { if(data.status === 'success') location.reload(); });
+        };
+        window.enableEdit = function(id) {
+            const row = document.getElementById(`exp-row-${id}`);
+            const dateCell = row.querySelector('.exp-date-cell');
+            const descCell = row.querySelector('.exp-desc-cell');
+            const actionCell = row.querySelector('td:last-child');
+            const oldDate = dateCell.innerText.trim();
+            const oldDesc = descCell.innerText.trim();
+            dateCell.innerHTML = `<input type="date" id="edit-date-${id}" value="${oldDate}" class="w-full p-2 text-xs border rounded-lg">`;
+            descCell.innerHTML = `<textarea id="edit-desc-${id}" rows="3" class="w-full p-2 text-xs border rounded-lg resize-none">${oldDesc}</textarea>`;
+            actionCell.innerHTML = `<button onclick="saveEdit('${id}')" class="text-green-600 font-bold text-xs uppercase">Save</button>`;
+        };
+        window.saveEdit = function(id) {
+            const newDate = document.getElementById(`edit-date-${id}`).value;
+            const newDesc = document.getElementById(`edit-desc-${id}`).value;
+            fetch(`/ajax/edit-expansion/${id}/`, {
+                method: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/x-www-form-urlencoded" },
+                body: `date=${encodeURIComponent(newDate)}&description=${encodeURIComponent(newDesc)}`
+            }).then(res => res.json()).then(data => { if(data.status === 'success') location.reload(); });
+        };
+    });
+</script>
+{% endblock %}

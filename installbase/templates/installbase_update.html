@@ -1,0 +1,594 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .modal-backdrop { background-color: rgba(0, 0, 0, 0.7) !important; backdrop-filter: none !important; }
+    @keyframes pop-in { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+    .animate-pop-in { animation: pop-in 0.15s ease-out forwards; will-change: transform, opacity; }
+    select, input, textarea { width: 100%; padding: 0.85rem 1rem; border-radius: 1.25rem; border: 1px solid #f3f4f6; background-color: #f9fafb; font-size: 0.875rem; transition: all 0.2s; }
+    select:focus, input:focus, textarea:focus { outline: none; border-color: #0067B3; background-color: #fff; box-shadow: 0 0 0 4px rgba(0, 103, 179, 0.05); }
+    textarea { resize: none; }
+    label { display: block; font-size: 0.75rem; font-weight: 700; color: #374151; margin-bottom: 0.5rem; margin-left: 0.25rem; }
+</style>
+
+<div class="max-w-6xl mx-auto py-12 px-6">
+    <div class="mb-10">
+        <h2 class="text-3xl font-black text-gray-900 tracking-tight">Update System Info</h2>
+        <p class="text-gray-400 mt-2 font-medium">기존 장비의 정보를 수정하고 업데이트합니다.</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-8">
+        {% csrf_token %}
+
+        <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-50">
+            <h3 class="text-lg font-bold text-gray-800 mb-8 border-b border-gray-50 pb-4">
+                <i class="fa-solid fa-file-contract text-[#0067B3] mr-2"></i> 기본 관리 및 계약 정보
+            </h3>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100 mb-6">
+                        <div class="flex flex-col md:flex-row gap-8 items-start">
+                            <div id="customer-logo-preview" class="w-full md:w-1/2 flex items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-transparent shadow-sm min-h-[160px]">
+                                {% if installbase.customer.logo %}
+                                    <img src="{{ installbase.customer.logo.url }}" class="w-full h-auto block">
+                                {% else %}
+                                    <i class="fa-solid fa-building text-gray-200 text-4xl py-12"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-1 w-full">
+                                <label class="text-sm font-bold text-gray-700">{{ form.customer.label }}</label>
+                                {{ form.customer }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div class="md:col-span-3">
+                            <label class="text-sm font-bold text-gray-700">설치 국가</label>
+                            <div class="flex items-center gap-3">
+                                <div id="country-flag-display" class="w-14 h-10 rounded-xl border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+                                    <i class="fa-solid fa-earth-asia text-gray-200"></i>
+                                </div>
+                                <div class="flex-1">{{ form.country }}</div>
+                            </div>
+                        </div>
+                        <div>{{ form.project.label_tag }} {{ form.project }}</div>
+                        <div>{{ form.service_name.label_tag }} {{ form.service_name }}</div>
+                        <div>{{ form.service_level.label_tag }} {{ form.service_level }}</div>
+                        <div>{{ form.location.label_tag }} {{ form.location }}</div>
+                        <div>{{ form.rack_space.label_tag }} {{ form.rack_space }}</div>
+                        <div>{{ form.install_date.label_tag }} {{ form.install_date }}</div>
+                        <div>{{ form.contract_end_date.label_tag }} {{ form.contract_end_date }}</div>
+                        <div>{{ form.maintenance_start.label_tag }} {{ form.maintenance_start }}</div>
+                        <div>{{ form.maintenance_end.label_tag }} {{ form.maintenance_end }}</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col bg-blue-50/20 p-6 rounded-[2rem] border border-blue-50">
+                    <label class="block text-xs font-black text-[#0067B3] uppercase mb-3 ml-2">담당 엔지니어</label>
+                    <div id="engineer-badge-container" class="flex flex-wrap gap-2 mb-6 min-h-[140px] p-4 bg-white rounded-2xl border-2 border-dashed border-blue-100 items-start content-start transition-all">
+                        <p id="placeholder-text" class="text-gray-400 text-[11px] mt-2 ml-1 text-center w-full italic {% if installbase.assigned_engineers.all %}hidden{% endif %}">엔지니어를 클릭하세요.</p>
+                        
+                        {# 이미 선택된 엔지니어 배지 표시 #}
+                        {% for eng in installbase.assigned_engineers.all %}
+                        <div class="flex items-center gap-2 px-3 py-1.5 bg-[#0067B3] text-white rounded-full animate-pop-in mb-1 text-[11px] shadow-sm badge-item" data-id="{{ eng.id }}">
+                            <span>{{ eng.last_name }}{{ eng.first_name }}</span>
+                            <button type="button" class="ml-1 remove-btn" onclick="handleRemoveBadge(this, '{{ eng.id }}')">×</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div id="engineer-pool" class="flex flex-wrap gap-2">
+                        {# 모든 선택지를 버튼으로 만들되, 이미 선택된 것은 style.display="none" 처리 #}
+                        {% for choice in form.assigned_engineers.field.choices %}
+                            {% if choice.0 %}
+                                <button type="button" data-id="{{ choice.0 }}" data-name="{{ choice.1 }}"
+                                        class="engineer-source-btn group flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 text-gray-600 rounded-full hover:border-[#0067B3] transition-all shadow-sm"
+                                        {% if choice.0 in current_engineer_ids %} style="display:none;" {% endif %}>
+                                    <span class="text-[11px] font-semibold">{{ choice.1 }}</span>
+                                </button>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="hidden">{{ form.assigned_engineers }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-50">
+            <h3 class="text-lg font-bold text-gray-800 mb-8 border-b border-gray-50 pb-4">
+                <i class="fa-solid fa-microchip text-cyan-500 mr-2"></i> 하드웨어 상세 스펙
+            </h3>
+            <div class="bg-cyan-50/30 p-8 rounded-[2.5rem] border border-cyan-100/50 mb-10">
+                <div class="flex flex-col md:flex-row gap-10 items-start">
+                    <div id="product-image-preview" class="w-full md:w-1/2 flex items-center justify-center overflow-hidden rounded-2xl border border-cyan-200 bg-transparent shadow-md min-h-[160px]">
+                        {% if installbase.product.image %}
+                            <img src="{{ installbase.product.image.url }}" class="w-full h-auto block">
+                        {% else %}
+                            <i class="fa-solid fa-box text-gray-100 text-6xl py-16"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1 w-full">
+                        <label class="text-sm font-bold text-gray-700">{{ form.product.label }}</label>
+                        {{ form.product }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>{{ form.cluster_name.label_tag }} {{ form.cluster_name }}</div>
+                <div>{{ form.ontap_version.label_tag }} {{ form.ontap_version }}</div>
+                <div>{{ form.shelf_models.label_tag }} {{ form.shelf_models }}</div>
+
+                <!-- Switch 연결 정보 -->
+                <div class="md:col-span-3 mt-4 p-6 bg-purple-50/30 rounded-[2rem] border border-purple-100">
+                    <h4 class="text-sm font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired text-purple-500 text-xs"></i> Switch 연결 정보
+                    </h4>
+                    <input type="hidden" name="is_switch_connected" id="id_is_switch_connected" value="{{ installbase.is_switch_connected|yesno:'True,False' }}">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Cluster Switch 선택 -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-3">Cluster Switch</label>
+                            <div class="flex gap-4 mb-4 p-1.5 bg-white rounded-2xl w-fit">
+                                <label class="flex items-center gap-2 px-6 py-3 rounded-xl cursor-pointer transition-all has-[:checked]:bg-purple-100 has-[:checked]:shadow-sm has-[:checked]:text-purple-700">
+                                    <input type="radio" name="switch_type_toggle" value="switchless" id="switch_type_switchless" class="hidden" {% if not installbase.is_switch_connected %}checked{% endif %} onchange="toggleSwitchFields(true)">
+                                    <span class="text-sm font-bold">Switchless Cluster</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-6 py-3 rounded-xl cursor-pointer transition-all has-[:checked]:bg-purple-100 has-[:checked]:shadow-sm has-[:checked]:text-purple-700">
+                                    <input type="radio" name="switch_type_toggle" value="switched" id="switch_type_switched" class="hidden" {% if installbase.is_switch_connected %}checked{% endif %} onchange="toggleSwitchFields(false)">
+                                    <span class="text-sm font-bold">Switched Cluster</span>
+                                </label>
+                            </div>
+                            <div id="switch-fields-container" class="space-y-4">
+                                <div>{{ form.cluster_switch.label_tag }} {{ form.cluster_switch }}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Fabric Pool 선택 -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-3">Fabric Pool</label>
+                            <div class="flex gap-4 mb-4 p-1.5 bg-white rounded-2xl w-fit">
+                                <label class="flex items-center gap-2 px-6 py-3 rounded-xl cursor-pointer transition-all has-[:checked]:bg-indigo-100 has-[:checked]:shadow-sm has-[:checked]:text-indigo-700">
+                                    <input type="radio" name="fabric_pool_type" value="not_connected" id="fabric_pool_not_connected" class="hidden" {% if not installbase.is_fabric_pool_connected %}checked{% endif %} onchange="toggleFabricPoolFields(false)">
+                                    <span class="text-sm font-bold">미연동</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-6 py-3 rounded-xl cursor-pointer transition-all has-[:checked]:bg-indigo-100 has-[:checked]:shadow-sm has-[:checked]:text-indigo-700">
+                                    <input type="radio" name="fabric_pool_type" value="connected" id="fabric_pool_connected" class="hidden" {% if installbase.is_fabric_pool_connected %}checked{% endif %} onchange="toggleFabricPoolFields(true)">
+                                    <span class="text-sm font-bold">Fabric Pool 연동</span>
+                                </label>
+                            </div>
+                        <div id="fabric-pool-fields-container" class="space-y-4" style="opacity: {% if installbase.is_fabric_pool_connected %}1{% else %}0.4{% endif %}; pointer-events: {% if installbase.is_fabric_pool_connected %}auto{% else %}none{% endif %};">
+                            <div>{{ form.fabric_pool_switch.label_tag }} {{ form.fabric_pool_switch }}</div>
+                        </div>
+                            <input type="hidden" name="is_fabric_pool_connected" id="id_is_fabric_pool_connected" value="{{ installbase.is_fabric_pool_connected|yesno:'True,False' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-8 p-8 bg-gray-50/50 rounded-[2rem] border border-gray-100">
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-8 h-8 rounded-lg bg-gray-800 text-white flex items-center justify-center text-xs font-bold">A</span>
+                            <span class="text-sm font-bold text-gray-700">Node 1</span>
+                        </div>
+                        <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-1 ml-1">Serial Number</label>{{ form.serial_number_1 }}</div>
+                        <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-1 ml-1">Node Name</label>{{ form.node_name_1 }}</div>
+                        <div id="node-number-1-container" class="{% if not installbase.is_switch_connected %}hidden{% endif %}">
+                            <label class="block text-[11px] font-black text-gray-400 uppercase mb-1 ml-1">클러스터 내 노드 번호</label>
+                            <select name="node_number_1" id="id_node_number_1" class="w-full p-3 rounded-xl border border-gray-200 bg-white text-sm">
+                                <option value="">선택하세요</option>
+                                {% if installbase.node_number_1 %}
+                                <option value="{{ installbase.node_number_1 }}" selected>{{ installbase.node_number_1 }}번 노드</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-8 h-8 rounded-lg bg-gray-400 text-white flex items-center justify-center text-xs font-bold">B</span>
+                            <span class="text-sm font-bold text-gray-700">Node 2</span>
+                        </div>
+                        <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-1 ml-1">Serial Number</label>{{ form.serial_number_2 }}</div>
+                        <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-1 ml-1">Node Name</label>{{ form.node_name_2 }}</div>
+                        <div id="node-number-2-container" class="{% if not installbase.is_switch_connected %}hidden{% endif %}">
+                            <label class="block text-[11px] font-black text-gray-400 uppercase mb-1 ml-1">클러스터 내 노드 번호</label>
+                            <select name="node_number_2" id="id_node_number_2" class="w-full p-3 rounded-xl border border-gray-200 bg-white text-sm">
+                                <option value="">선택하세요</option>
+                                {% if installbase.node_number_2 %}
+                                <option value="{{ installbase.node_number_2 }}" selected>{{ installbase.node_number_2 }}번 노드</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">컨트롤러 슬롯 상세 정보</label>
+                    {{ form.controller_slots }}
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-50">
+            <h3 class="text-lg font-bold text-gray-800 mb-8 border-b border-gray-50 pb-4">
+                <i class="fa-solid fa-list-check text-orange-400 mr-2"></i> 점검 및 라이선스 설정
+            </h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div class="space-y-4">
+                    <label class="block text-sm font-bold text-gray-700">정기점검 주기 설정</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        {% for val, label in form.fields.periodic_inspection.choices %}
+                        {% if val %}
+                        <label class="flex items-center justify-center p-4 rounded-2xl border border-gray-100 bg-gray-50 cursor-pointer hover:bg-white hover:border-orange-200 transition-all has-[:checked]:border-orange-400 has-[:checked]:bg-orange-50/30 has-[:checked]:text-orange-600">
+                            <input type="radio" name="periodic_inspection" value="{{ val }}" class="hidden" {% if form.periodic_inspection.value == val %}checked{% endif %}>
+                            <span class="text-xs font-bold">{{ label }}</span>
+                        </label>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <label class="block text-sm font-bold text-gray-700">라이선스 타입</label>
+                    <div class="flex gap-3">
+                        <label class="flex-1 flex items-center justify-center py-3 rounded-xl border border-gray-100 bg-gray-50 cursor-pointer has-[:checked]:bg-[#0067B3] has-[:checked]:text-white transition-all">
+                            <input type="radio" name="license_type" value="base" class="hidden" {% if form.license_type.value == 'base' %}checked{% endif %}>
+                            <span class="text-xs font-black italic">BASE</span>
+                        </label>
+                        <label class="flex-1 flex items-center justify-center py-3 rounded-xl border border-gray-100 bg-gray-50 cursor-pointer has-[:checked]:bg-gradient-to-r has-[:checked]:from-blue-600 has-[:checked]:to-cyan-500 has-[:checked]:text-white transition-all">
+                            <input type="radio" name="license_type" value="one" class="hidden" {% if form.license_type.value == 'one' %}checked{% endif %}>
+                            <span class="text-xs font-black italic">ONTAP ONE</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 border-t border-gray-50 pt-8">
+                <div class="space-y-4">
+                    <div>
+                        <label for="{{ form.cluster_mgmt_ip.id_for_label }}" class="block text-xs font-bold text-gray-400 uppercase mb-1">Cluster Management IP</label>
+                        {{ form.cluster_mgmt_ip }}
+                    </div>
+                    <div>
+                        <label for="{{ form.node1_mgmt_ip.id_for_label }}" class="block text-xs font-bold text-gray-400 uppercase mb-1">첫번째 노드 Management IP</label>
+                        {{ form.node1_mgmt_ip }}
+                    </div>
+                    <div>
+                        <label for="{{ form.node2_mgmt_ip.id_for_label }}" class="block text-xs font-bold text-gray-400 uppercase mb-1">두번째 노드 Management IP</label>
+                        {{ form.node2_mgmt_ip }}
+                    </div>
+                    <div>
+                        <label for="{{ form.node1_bmc_ip.id_for_label }}" class="block text-xs font-bold text-gray-400 uppercase mb-1">첫번째 노드 BMC IP</label>
+                        {{ form.node1_bmc_ip }}
+                    </div>
+                    <div>
+                        <label for="{{ form.node2_bmc_ip.id_for_label }}" class="block text-xs font-bold text-gray-400 uppercase mb-1">두번째 노드 BMC IP</label>
+                        {{ form.node2_bmc_ip }}
+                    </div>
+                    <div>
+                        <label for="{{ form.other_ips.id_for_label }}" class="block text-xs font-bold text-gray-400 uppercase mb-1">그 외 IP</label>
+                        {{ form.other_ips }}
+                    </div>
+                </div>
+                <div>{{ form.disk_info.label_tag }} {{ form.disk_info }}</div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4 mt-12 pb-12">
+            <button type="button" onclick="history.back()" class="px-8 py-4 rounded-2xl font-bold text-gray-400 hover:bg-gray-100 transition">취소</button>
+            <button type="submit" class="bg-[#0067B3] text-white px-12 py-4 rounded-2xl font-bold shadow-xl shadow-blue-100 hover:translate-y-[-2px] transition-all">변경사항 저장</button>
+        </div>
+    </form>
+</div>
+
+<script>
+// 비활성화된 엔지니어 ID 목록 (서버에서 전달받은 값)
+const inactiveEngineerIds = [{% for id in inactive_engineer_ids %}{{ id }}{% if not forloop.last %}, {% endif %}{% empty %}{% endfor %}];
+
+// 1. 배지 삭제 및 풀 버튼 복구 함수
+function handleRemoveBadge(btn, userId) {
+    const hiddenSelect = document.querySelector('select[name="assigned_engineers"]');
+    const badgeContainer = document.getElementById('engineer-badge-container');
+    const placeholder = document.getElementById('placeholder-text');
+
+    // Select 박스에서 해당 값 선택 해제
+    for (let opt of hiddenSelect.options) {
+        if (opt.value == userId) opt.selected = false;
+    }
+
+    // 배지 UI 제거
+    btn.closest('.badge-item').remove();
+
+    // 비활성화된 엔지니어가 아닌 경우에만 풀에 다시 노출
+    if (!inactiveEngineerIds.includes(parseInt(userId))) {
+        const sourceBtns = document.querySelectorAll('.engineer-source-btn');
+        sourceBtns.forEach(sBtn => {
+            if (sBtn.getAttribute('data-id') == userId) {
+                sBtn.style.display = 'flex';
+            }
+        });
+    }
+
+    if (badgeContainer.querySelectorAll('.badge-item').length === 0) {
+        placeholder.classList.remove('hidden');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const poolButtons = document.querySelectorAll('.engineer-source-btn');
+    const badgeContainer = document.getElementById('engineer-badge-container');
+    const hiddenSelect = document.querySelector('select[name="assigned_engineers"]');
+    const placeholder = document.getElementById('placeholder-text');
+
+    // 2. 풀 버튼 클릭 시 배지 생성 및 숨김
+    poolButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.getAttribute('data-id');
+            const userName = this.getAttribute('data-name');
+            
+            this.style.display = 'none';
+
+            for (let opt of hiddenSelect.options) {
+                if (opt.value == userId) opt.selected = true;
+            }
+
+            const badge = document.createElement('div');
+            badge.className = "flex items-center gap-2 px-3 py-1.5 bg-[#0067B3] text-white rounded-full animate-pop-in mb-1 text-[11px] shadow-sm badge-item";
+            badge.setAttribute('data-id', userId);
+            badge.innerHTML = `<span>${userName}</span><button type="button" class="ml-1">×</button>`;
+            
+            badge.querySelector('button').onclick = function() {
+                handleRemoveBadge(this, userId);
+            };
+
+            badgeContainer.appendChild(badge);
+            placeholder.classList.add('hidden');
+        });
+    });
+
+    // 국기 업데이트
+    const countrySelect = document.querySelector('select[name="country"]');
+    const flagDisplay = document.getElementById('country-flag-display');
+    
+    const countryCodeMap = {
+        'KOREA': 'kr', 'SOUTH KOREA': 'kr', 'REPUBLIC OF KOREA': 'kr', 'KR': 'kr', '한국': 'kr', '대한민국': 'kr',
+        'USA': 'us', 'UNITED STATES': 'us', 'US': 'us', '미국': 'us',
+        'JAPAN': 'jp', 'JP': 'jp', '일본': 'jp',
+        'CHINA': 'cn', 'CN': 'cn', '중국': 'cn',
+        'GERMANY': 'de', 'DE': 'de', '독일': 'de',
+        'VIETNAM': 'vn', 'VN': 'vn', '베트남': 'vn',
+        'SINGAPORE': 'sg', 'SG': 'sg', '싱가포르': 'sg',
+        'INDIA': 'in', 'IN': 'in', '인도': 'in',
+        'SLOVAKIA': 'sk', 'SK': 'sk', '슬로바키아': 'sk'
+    };
+    
+    function updateCountryFlag() {
+        if (!countrySelect) return;
+        const selectedText = countrySelect.options[countrySelect.selectedIndex]?.text.toUpperCase().trim();
+        const countryCode = countryCodeMap[selectedText];
+        
+        if (countryCode) {
+            flagDisplay.innerHTML = `<img src="https://flagcdn.com/w80/${countryCode}.png" class="w-full h-full object-cover animate-pop-in">`;
+        } else {
+            flagDisplay.innerHTML = `<i class="fa-solid fa-earth-asia text-gray-200"></i>`;
+        }
+    }
+    
+    if (countrySelect) {
+        countrySelect.addEventListener('change', updateCountryFlag);
+        updateCountryFlag();
+    }
+    
+    // 이미지 미리보기 업데이트 함수 (고객사/제품)
+    async function updatePreview(selectElement, previewId, type) {
+        const id = selectElement ? selectElement.value : null;
+        const previewContainer = document.getElementById(previewId);
+        if (!id || !previewContainer) {
+            if (previewContainer) {
+                previewContainer.innerHTML = `<i class="fa-solid fa-${type === 'customer' ? 'building' : 'box'} text-gray-100 text-5xl py-12"></i>`;
+            }
+            return;
+        }
+        try {
+            const response = await fetch(`/ajax/get-image-url/?type=${type}&id=${id}`);
+            const data = await response.json();
+            if (data.url) {
+                previewContainer.innerHTML = `<img src="${data.url}" class="w-full h-auto block animate-pop-in">`;
+            } else {
+                previewContainer.innerHTML = `<i class="fa-solid fa-${type === 'customer' ? 'building' : 'box'} text-gray-100 text-5xl py-12"></i>`;
+            }
+        } catch (e) { 
+            console.error('Preview update error:', e);
+            if (previewContainer) {
+                previewContainer.innerHTML = `<i class="fa-solid fa-${type === 'customer' ? 'building' : 'box'} text-gray-100 text-5xl py-12"></i>`;
+            }
+        }
+    }
+    
+    // 고객사 변경 시 실시간 미리보기 업데이트
+    const customerSelect = document.querySelector('select[name="customer"]');
+    if (customerSelect) {
+        customerSelect.addEventListener('change', function() {
+            updatePreview(this, 'customer-logo-preview', 'customer');
+        });
+    }
+    
+    // 제품 변경 시 실시간 미리보기 업데이트
+    const productSelect = document.querySelector('select[name="product"]');
+    if (productSelect) {
+        productSelect.addEventListener('change', function() {
+            updatePreview(this, 'product-image-preview', 'product');
+        });
+    }
+    
+    // 노드 번호 관련 기능
+    const nodeNumber1Select = document.getElementById('id_node_number_1');
+    const nodeNumber2Select = document.getElementById('id_node_number_2');
+    const clusterNameInput = document.getElementById('id_cluster_name') || document.querySelector('input[name="cluster_name"]');
+    
+    // 사용 가능한 노드 번호로 옵션 업데이트
+    async function updateNodeNumberOptions() {
+        const clusterName = clusterNameInput ? clusterNameInput.value.trim() : '';
+        const excludeNode1 = nodeNumber1Select ? nodeNumber1Select.value : '';
+        const excludeNode2 = nodeNumber2Select ? nodeNumber2Select.value : '';
+        
+        try {
+            const response = await fetch(`/api/get-available-node-numbers/?cluster_name=${encodeURIComponent(clusterName)}&exclude_node1=${excludeNode1}&exclude_node2=${excludeNode2}`);
+            const data = await response.json();
+            const availableNumbers = data.available_numbers || [];
+            
+            // Node 1 옵션 업데이트
+            if (nodeNumber1Select) {
+                const currentValue1 = nodeNumber1Select.value;
+                nodeNumber1Select.innerHTML = '<option value="">선택하세요</option>';
+                availableNumbers.forEach(num => {
+                    const option = new Option(`${num}번 노드`, num, false, false);
+                    nodeNumber1Select.add(option);
+                });
+                // 현재 선택된 값이 사용 가능하면 유지
+                if (currentValue1 && availableNumbers.includes(parseInt(currentValue1))) {
+                    nodeNumber1Select.value = currentValue1;
+                }
+            }
+            
+            // Node 2 옵션 업데이트 (Node 1에서 선택한 번호 제외)
+            if (nodeNumber2Select) {
+                const currentValue2 = nodeNumber2Select.value;
+                const excludeNode1Value = nodeNumber1Select ? nodeNumber1Select.value : '';
+                const node2Available = excludeNode1Value 
+                    ? availableNumbers.filter(n => n != excludeNode1Value)
+                    : availableNumbers;
+                
+                nodeNumber2Select.innerHTML = '<option value="">선택하세요</option>';
+                node2Available.forEach(num => {
+                    const option = new Option(`${num}번 노드`, num, false, false);
+                    nodeNumber2Select.add(option);
+                });
+                // 현재 선택된 값이 사용 가능하면 유지
+                if (currentValue2 && node2Available.includes(parseInt(currentValue2))) {
+                    nodeNumber2Select.value = currentValue2;
+                }
+            }
+        } catch (error) {
+            console.error('노드 번호 조회 실패:', error);
+        }
+    }
+    
+    // 클러스터 이름 입력 시 실시간 업데이트
+    if (clusterNameInput) {
+        let debounceTimer;
+        clusterNameInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                updateNodeNumberOptions();
+            }, 500); // 500ms 디바운스
+        });
+    }
+    
+    // Node 1 선택 시 Node 2 옵션 업데이트 (선택한 번호 제외)
+    if (nodeNumber1Select) {
+        nodeNumber1Select.addEventListener('change', function() {
+            updateNodeNumberOptions();
+        });
+    }
+    
+    // Node 2 선택 시 Node 1 옵션 업데이트 (선택한 번호 제외)
+    if (nodeNumber2Select) {
+        nodeNumber2Select.addEventListener('change', function() {
+            updateNodeNumberOptions();
+        });
+    }
+    
+    // 초기 로드 시 옵션 생성
+    updateNodeNumberOptions();
+    
+    // 초기 스위치 설정
+    const switchlessRadio = document.getElementById('switch_type_switchless');
+    const switchedRadio = document.getElementById('switch_type_switched');
+    if (switchlessRadio && switchlessRadio.checked) {
+        toggleSwitchFields(true);
+    } else if (switchedRadio && switchedRadio.checked) {
+        toggleSwitchFields(false);
+    }
+    
+    // 초기 로드 시 Fabric Pool 상태 확인 및 비활성화 설정
+    const fabricPoolConnectedRadio = document.querySelector('input[name="fabric_pool_type"][value="connected"]');
+    const fabricPoolSelect = document.querySelector('select[name="fabric_pool_switch"]');
+    if (fabricPoolConnectedRadio && fabricPoolConnectedRadio.checked) {
+        toggleFabricPoolFields(true);
+    } else {
+        toggleFabricPoolFields(false);
+        // 초기 로드 시 비활성화 상태로 설정
+        if (fabricPoolSelect) {
+            fabricPoolSelect.disabled = true;
+        }
+    }
+});
+
+function toggleSwitchFields(isSwitchless) {
+    const container = document.getElementById('switch-fields-container');
+    const hiddenField = document.getElementById('id_is_switch_connected');
+    const inputs = container.querySelectorAll('select, input');
+    const nodeNumber1Container = document.getElementById('node-number-1-container');
+    const nodeNumber2Container = document.getElementById('node-number-2-container');
+    const nodeNumber1Select = document.getElementById('id_node_number_1');
+    const nodeNumber2Select = document.getElementById('id_node_number_2');
+    
+    if (isSwitchless) {
+        container.style.opacity = '0.4'; container.style.pointerEvents = 'none';
+        inputs.forEach(el => { el.disabled = true; el.value = ""; });
+        hiddenField.value = "False";
+        // 노드 번호 필드 숨기기
+        if (nodeNumber1Container) {
+            nodeNumber1Container.classList.add('hidden');
+            nodeNumber1Container.style.display = 'none';
+        }
+        if (nodeNumber2Container) {
+            nodeNumber2Container.classList.add('hidden');
+            nodeNumber2Container.style.display = 'none';
+        }
+        if (nodeNumber1Select) nodeNumber1Select.value = "";
+        if (nodeNumber2Select) nodeNumber2Select.value = "";
+    } else {
+        container.style.opacity = '1'; container.style.pointerEvents = 'auto';
+        inputs.forEach(el => el.disabled = false);
+        hiddenField.value = "True";
+        // 노드 번호 필드 표시
+        if (nodeNumber1Container) {
+            nodeNumber1Container.classList.remove('hidden');
+            nodeNumber1Container.style.display = 'block';
+        }
+        if (nodeNumber2Container) {
+            nodeNumber2Container.classList.remove('hidden');
+            nodeNumber2Container.style.display = 'block';
+        }
+    }
+}
+
+// Fabric Pool 연동 여부 라디오 버튼 이벤트 (전역 함수)
+function toggleFabricPoolFields(isConnected) {
+    const fabricPoolContainer = document.getElementById('fabric-pool-fields-container');
+    const fabricPoolSelect = document.querySelector('select[name="fabric_pool_switch"]');
+    const hiddenInput = document.getElementById('id_is_fabric_pool_connected');
+    
+    if (fabricPoolContainer && fabricPoolSelect) {
+        if (isConnected) {
+            // 연동 선택 시 활성화
+            fabricPoolContainer.style.opacity = '1';
+            fabricPoolContainer.style.pointerEvents = 'auto';
+            fabricPoolSelect.disabled = false;
+            if (hiddenInput) hiddenInput.value = 'True';
+        } else {
+            // 미연동 선택 시 비활성화
+            fabricPoolContainer.style.opacity = '0.4';
+            fabricPoolContainer.style.pointerEvents = 'none';
+            fabricPoolSelect.disabled = true;
+            if (hiddenInput) hiddenInput.value = 'False';
+            // 미연동 선택 시 선택값 초기화
+            fabricPoolSelect.value = '';
+        }
+    }
+}
+
+</script>
+{% endblock %}

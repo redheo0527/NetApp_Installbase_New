@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    body { overflow-x: hidden; }
+    .overflow-x-auto::-webkit-scrollbar { height: 6px; }
+    .overflow-x-auto::-webkit-scrollbar-track { background: #f1f1f1; }
+    .overflow-x-auto::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+    
+    /* 로고 이미지 스타일 */
+    .customer-logo {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+        background-color: #ffffff;
+        border: 1px solid #f1f5f9;
+        padding: 4px;
+    }
+</style>
+
+<div class="max-w-[1600px] mx-auto py-10 px-8">
+    <div class="flex justify-between items-center mb-10">
+        <div>
+            <h2 class="text-4xl font-black text-gray-900 tracking-tight">Install Base</h2>
+            <p class="text-gray-400 mt-2 font-medium">유지보수 자산 및 점검 현황 리스트</p>
+        </div>
+
+        <form method="get" class="relative w-[400px]">
+            <input type="text" name="q" value="{{ query }}" placeholder="고객사, SN, 모델명 검색..."
+                   class="w-full pl-14 pr-6 py-4 rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-[#0067B3] bg-white text-gray-700">
+            <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-300"></i>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-10 py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+            <div class="flex items-center gap-4">
+                <span class="text-sm font-bold text-gray-500">전체 장비 <span class="text-[#0067B3]">{{ installbases.count }}</span></span>
+                <div class="w-px h-4 bg-gray-200"></div>
+                <a href="{% url 'installbase_deleted_list' %}" class="text-xs font-bold text-gray-400 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-trash-can mr-1"></i> 삭제된 자산
+                </a>
+            </div>
+            <a href="{% url 'installbase_create' %}" class="px-6 py-3 bg-[#0067B3] text-white rounded-xl text-sm font-bold hover:bg-[#004d86] transition-all shadow-md shadow-blue-100">
+                <i class="fa-solid fa-plus mr-2"></i> 새 장비 등록
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[1200px]">
+                <thead>
+                    <tr class="text-gray-400 text-[11px] uppercase tracking-widest bg-white">
+                        <th class="px-10 py-5 font-bold">Customer</th>
+                        <th class="px-8 py-5 font-bold">System Details</th>
+                        <th class="px-8 py-5 font-bold">Cluster Serial Numbers</th>
+                        <th class="px-8 py-5 font-bold text-center">Version & Type</th>
+                        <th class="px-8 py-5 font-bold text-center">End of Support</th>
+                        <th class="px-10 py-5 font-bold text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for item in installbases %}
+                    <tr class="hover:bg-blue-50/20 transition-all group">
+                        <td class="px-10 py-8">
+                            <div class="flex items-center gap-5">
+                                {% if installbase.customer.logo %}
+                                    <img src="{{ installbase.customer.logo.url }}" alt="{{ item.customer }}" class="customer-logo rounded-xl">
+                                {% else %}
+                                    <div class="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-xl border border-gray-50">
+                                        {{ item.customer|slice:":1" }}
+                                    </div>
+                                {% endif %}
+                                <span class="text-xl font-black text-gray-800 group-hover:text-[#0067B3] transition-colors leading-tight">
+                                    {{ item.customer }}
+                                </span>
+                            </div>
+                        </td>
+
+                        <td class="px-8 py-8">
+                            <div class="flex flex-col gap-1.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-0.5 bg-blue-600 text-[10px] font-black text-white rounded italic">{{ item.product.lineup }}</span>
+                                    <span class="text-base font-bold text-gray-700">
+                                        {% if item.cluster_model_names %}
+                                            {{ item.cluster_model_names|join:" / " }}
+                                        {% else %}
+                                            {{ item.product.model_name }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <span class="text-sm font-semibold text-[#0067B3]">{{ item.cluster_name }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-8 py-8">
+                            <div class="flex flex-wrap gap-1.5 max-w-[300px]">
+                                {% if item.cluster_serial_numbers %}
+                                    {% for serial in item.cluster_serial_numbers %}
+                                        <span class="px-2 py-1 bg-gray-50 border border-gray-100 rounded text-[11px] font-mono text-gray-500">
+                                            {{ serial }}
+                                        </span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="px-2 py-1 bg-gray-50 border border-gray-100 rounded text-[11px] font-mono text-gray-500">
+                                        {{ item.serial_number_1 }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td class="px-8 py-8 text-center">
+                            <div class="flex flex-col items-center gap-2">
+                                <span class="px-3 py-1 bg-blue-50 text-[#0067B3] rounded-full text-xs font-bold">
+                                    v{{ item.ontap_version|default:"-" }}
+                                </span>
+                                <span class="text-xs font-bold text-gray-400">
+                                    <i class="fa-regular fa-calendar-check mr-1"></i>{{ item.maintenance_type|default:"월점검" }}
+                                </span>
+                            </div>
+                        </td>
+
+                        <td class="px-8 py-8 text-center">
+                            <div class="flex flex-col items-center">
+                                <span class="text-base font-black {% if item.is_expiring_soon %}text-red-500{% else %}text-gray-700{% endif %}">
+                                    {{ item.maintenance_end|date:"Y. m. d" }}
+                                </span>
+                                {% if item.is_expiring_soon %}
+                                    <span class="text-[10px] font-bold text-red-400 mt-1 uppercase tracking-tighter">renewal required</span>
+                                {% else %}
+                                    <span class="text-[10px] font-bold text-gray-300 mt-1 uppercase tracking-tighter">active contract</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td class="px-10 py-8 text-right">
+                            <a href="{% url 'installbase_detail' item.pk %}" 
+                               class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 text-gray-400 group-hover:bg-[#0067B3] group-hover:text-white transition-all shadow-sm">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-24 text-center text-gray-400 font-medium">
+                            <i class="fa-solid fa-inbox text-4xl mb-4 block opacity-20"></i>
+                            등록된 장비가 없습니다.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

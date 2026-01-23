@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    @keyframes slide-up { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+    .animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
+    
+    /* 기본 카드 스타일 */
+    .info-card { background: white; border-radius: 2rem; border: 1px solid #f3f4f6; padding: 2rem; transition: all 0.3s ease; position: relative; }
+    .info-card:hover { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
+    
+    /* 텍스트 스타일 */
+    .label-text { font-size: 0.75rem; font-weight: 800; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .value-text { font-size: 1rem; font-weight: 600; color: #1f2937; }
+    
+    /* 슬롯 정보 공백 해결 */
+    .pre-wrap { white-space: pre-wrap; word-break: break-all; display: block; }
+
+    /* 황금색 별 */
+    .star-gold { color: #FFD700; text-shadow: 0 0 8px rgba(255, 215, 0, 0.4); margin-left: 4px; }
+
+    /* 클러스터 상태 배지 스타일 (요청하신 부분) */
+    .badge-switched { background-color: #0067B3 !important; color: white !important; }
+    .badge-switchless { background-color: #111827 !important; color: white !important; }
+</style>
+
+<div class="max-w-7xl mx-auto py-12 px-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+        <div class="animate-slide-up">
+            <nav class="flex mb-4">
+                <ol class="inline-flex items-center text-sm font-medium text-gray-500">
+                    <li>인벤토리</li>
+                    <li><i class="fa-solid fa-chevron-right text-[10px] mx-2"></i></li>
+                    <li class="text-blue-600 font-bold">{{ installbase.customer.name }}</li>
+                </ol>
+            </nav>
+            <h2 class="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-4">
+                <div id="detail-flag-display" class="flex-shrink-0 flex items-center justify-center w-[48px] h-[32px] overflow-hidden rounded shadow-sm border border-gray-100 bg-gray-50">
+                    <i class="fa-solid fa-earth-asia text-gray-200 text-xl"></i>
+                </div>
+                {{ installbase.cluster_name }}
+                <span class="text-sm bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full font-bold">{{ installbase.product.model_name }}</span>
+            </h2>
+        </div>
+        <div class="flex gap-3 animate-slide-up">
+            <a href="{% url 'installbase_list' %}" class="px-6 py-3 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition text-sm">목록으로</a>
+            <a href="{% url 'installbase_update' installbase.pk %}" class="px-6 py-3 bg-[#0067B3] text-white rounded-2xl font-bold shadow-lg shadow-blue-100 hover:translate-y-[-2px] transition text-sm text-center">정보 수정</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-8 animate-slide-up" style="animation-delay: 0.1s;">
+            
+            <div class="info-card flex flex-col md:flex-row gap-10 items-center overflow-hidden">
+                <div class="absolute top-0 right-0 p-8">
+                    {% if installbase.customer.logo %}<img src="{{ installbase.customer.logo.url }}" class="h-10 opacity-30 grayscale">{% endif %}
+                </div>
+                <div class="w-full md:w-1/3 flex justify-center">
+                    {% if installbase.product.image %}<img src="{{ installbase.product.image.url }}" class="w-full max-w-[240px] drop-shadow-2xl">
+                    {% else %}<div class="w-48 h-48 bg-gray-50 rounded-3xl flex items-center justify-center"><i class="fa-solid fa-box text-gray-200 text-6xl"></i></div>{% endif %}
+                </div>
+                <div class="flex-1 grid grid-cols-2 gap-y-6">
+                    <div><p class="label-text">ONTAP Version</p><p class="text-2xl font-black text-gray-800">v{{ installbase.ontap_version }}</p></div>
+                    <div><p class="label-text">License Type</p><p class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 uppercase italic">{{ installbase.license_type|default:"BASE" }}</p></div>
+                    <div><p class="label-text">Periodic Inspection</p><p class="value-text flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500"></span>{{ installbase.get_periodic_inspection_display }}</p></div>
+                    <div>
+                        <p class="label-text">Service Level</p>
+                        <p class="value-text font-bold text-blue-600 flex items-center">
+                            {{ installbase.get_service_level_display }}
+                            {% if installbase.service_level == '4HR_NRD' %}<i class="fa-solid fa-star star-gold"></i>{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="info-card border-l-4 border-l-gray-800">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="w-10 h-10 bg-gray-800 text-white rounded-xl flex items-center justify-center font-black">1</span>
+                        <h4 class="font-bold text-gray-800">Node 1 Details</h4>
+                    </div>
+                    <div class="space-y-4">
+                        <div><p class="label-text">Node Name</p><p class="value-text">{{ installbase.node_name_1|default:"-" }}</p></div>
+                        <div><p class="label-text">Serial Number</p><p class="value-text font-mono tracking-tight text-blue-700">{{ installbase.serial_number_1 }}</p></div>
+                    </div>
+                </div>
+                <div class="info-card border-l-4 border-l-blue-400">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="w-10 h-10 bg-blue-400 text-white rounded-xl flex items-center justify-center font-black">2</span>
+                        <h4 class="font-bold text-gray-800">Node 2 Details</h4>
+                    </div>
+                    <div class="space-y-4">
+                        <div><p class="label-text">Node Name</p><p class="value-text">{{ installbase.node_name_2|default:"-" }}</p></div>
+                        <div><p class="label-text">Serial Number</p><p class="value-text font-mono tracking-tight text-blue-700">{{ installbase.serial_number_2|default:"-" }}</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card border-l-4 border-l-indigo-500 bg-indigo-50/30">
+                <h4 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-server text-indigo-500"></i> Controller Slot Details
+                </h4>
+                <div class="bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
+                    <p class="label-text text-indigo-400">구성 상세 정보</p>
+                    <div class="text-sm text-gray-700 leading-relaxed pre-wrap font-medium">{% if installbase.controller_slots %}{{ installbase.controller_slots }}{% else %}등록된 상세 슬롯 정보가 없습니다.{% endif %}</div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="flex justify-between items-start mb-8">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 bg-gray-100 text-gray-500 rounded-xl flex items-center justify-center">
+                            <i class="fa-solid fa-network-wired"></i>
+                        </span>
+                        <h4 class="text-xl font-bold text-gray-800">Cluster Network Infrastructure</h4>
+                    </div>
+                    {% if installbase.is_switch_connected %}
+                        <span class="px-4 py-1.5 badge-switched text-[10px] font-black rounded-lg uppercase tracking-wider shadow-sm">Switched</span>
+                    {% else %}
+                        <span class="px-4 py-1.5 badge-switchless text-[10px] font-black rounded-lg uppercase tracking-wider shadow-sm">Switchless</span>
+                    {% endif %}
+                </div>
+
+                {% if installbase.is_switch_connected %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
+                        <p class="text-[10px] font-black text-gray-400 mb-3">PRIMARY SWITCH</p>
+                        <div class="space-y-4">
+                            <div><p class="label-text">Switch Name</p><p class="value-text">{{ installbase.cluster_switch_name_1|default:"-" }}</p></div>
+                            <div><p class="label-text">Model</p><p class="value-text">{{ installbase.cluster_switch_model_1|default:"-" }}</p></div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
+                        <p class="text-[10px] font-black text-gray-400 mb-3">SECONDARY SWITCH</p>
+                        <div class="space-y-4">
+                            <div><p class="label-text">Switch Name</p><p class="value-text">{{ installbase.cluster_switch_name_2|default:"-" }}</p></div>
+                            <div><p class="label-text">Model</p><p class="value-text">{{ installbase.cluster_switch_model_2|default:"-" }}</p></div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="py-10 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                    <i class="fa-solid fa-circle-nodes text-gray-200 text-4xl mb-4"></i>
+                    <p class="text-sm text-gray-500 italic font-medium">No external cluster switches detected.<br>Operating in 2-node direct-connect mode.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="info-card">
+                <h4 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-microchip text-cyan-500"></i> Technical Specifications
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div>
+                        <p class="label-text">Install Country</p>
+                        <p class="value-text flex items-center gap-2">
+                            <span id="spec-flag-icon" class="inline-block w-5 h-3 overflow-hidden rounded-sm bg-gray-50"></span>
+                            {{ installbase.country|default:"-" }}
+                        </p>
+                    </div>
+                    <div><p class="label-text">Location / Rack</p><p class="value-text">{{ installbase.location|default:"-" }} / {{ installbase.rack_space|default:"-" }}</p></div>
+                    <div><p class="label-text">Shelf Models</p><p class="value-text">{{ installbase.shelf_models|default:"-" }}</p></div>
+                    <div class="md:col-span-3 pt-6 border-t border-gray-50">
+                        <p class="label-text">Disk Configuration</p>
+                        <p class="value-text text-sm leading-relaxed">{{ installbase.disk_info|linebreaksbr|default:"-" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-8 animate-slide-up" style="animation-delay: 0.2s;">
+            <div class="info-card bg-blue-50/50 border-blue-100">
+                <h4 class="text-lg font-bold text-blue-900 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-check text-blue-600"></i> Contract Timeline
+                </h4>
+                <div class="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-blue-100">
+                    <div class="pl-8 relative">
+                        <div class="absolute left-0 top-1 w-6 h-6 bg-white border-2 border-blue-400 rounded-full flex items-center justify-center"><div class="w-2 h-2 bg-blue-400 rounded-full"></div></div>
+                        <p class="text-[10px] font-black text-blue-500 uppercase">Installation Date</p>
+                        <p class="font-bold text-gray-800">{{ installbase.install_date|date:"Y-m-d" }}</p>
+                    </div>
+                    <div class="pl-8 relative">
+                        <div class="absolute left-0 top-1 w-6 h-6 bg-white border-2 border-indigo-400 rounded-full flex items-center justify-center"><div class="w-2 h-2 bg-indigo-400 rounded-full"></div></div>
+                        <p class="text-[10px] font-black text-indigo-500 uppercase">Maintenance End</p>
+                        <p class="font-bold text-xl text-blue-900">{{ installbase.maintenance_end|date:"Y-m-d" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h4 class="text-sm font-black text-gray-400 uppercase mb-4">Assigned Engineers</h4>
+                <div class="flex flex-wrap gap-2">
+                    {% for engineer in installbase.assigned_engineers.all %}
+                        <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
+                            <div class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold">{{ engineer.username|slice:":1"|upper }}</div>
+                            <span class="text-xs font-bold text-gray-700">{{ engineer.last_name }}{{ engineer.first_name }}</span>
+                        </div>
+                    {% empty %}<p class="text-xs text-gray-400 italic">지정된 엔지니어가 없습니다.</p>{% endfor %}
+                </div>
+            </div>
+
+            <div class="info-card bg-gray-900 text-white border-none shadow-2xl">
+                <h4 class="text-sm font-black text-gray-500 uppercase mb-4 tracking-widest">Network</h4>
+                <div class="p-4 bg-gray-800 rounded-2xl border border-gray-700">
+                    <p class="label-text text-gray-500">IP List</p>
+                    <p class="text-sm font-mono text-cyan-400 leading-relaxed">{{ installbase.ip_lists|linebreaksbr|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-12 animate-slide-up" style="animation-delay: 0.3s;">
+        <div class="info-card">
+            <div class="flex justify-between items-center mb-8">
+                <h4 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-blue-500"></i> 장비 증설 및 점검 이력
+                </h4>
+                <button onclick="toggleExpansionForm()" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700 transition">이력 추가</button>
+            </div>
+
+            <div id="expansionForm" class="hidden mb-8 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                <div class="space-y-4">
+                    <div class="flex flex-col w-48"><label class="label-text">증설 날짜</label><input type="date" id="expDate" class="p-3 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                    <div class="flex flex-col"><label class="label-text">증설 상세 내용</label><textarea id="expDesc" rows="3" class="w-full p-4 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea></div>
+                    <div class="flex justify-end gap-3"><button onclick="toggleExpansionForm()" class="px-6 py-2.5 bg-gray-200 text-gray-600 rounded-xl font-bold text-sm">취소</button><button onclick="submitExpansion()" class="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm">저장</button></div>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-2xl border border-gray-50">
+                <table class="w-full text-left table-fixed">
+                    <thead class="bg-gray-50 text-gray-400 uppercase text-[10px] font-black tracking-widest">
+                        <tr><th class="py-4 px-6 w-40">증설 날짜</th><th class="py-4 px-6">증설 상세 내용</th><th class="py-4 px-6 w-24 text-right">관리</th></tr>
+                    </thead>
+                    <tbody id="expansionTableBody" class="divide-y divide-gray-50 text-sm">
+                        {% for exp in expansions %}
+                        <tr class="history-row group hover:bg-gray-50/50 transition" id="exp-row-{{ exp.id }}">
+                            <td class="py-4 px-6 font-bold text-gray-600 exp-date-cell align-top">{{ exp.expansion_date|date:"Y-m-d" }}</td>
+                            <td class="py-4 px-6 text-gray-700 exp-desc-cell pre-wrap align-top">{{ exp.description }}</td>
+                            <td class="py-4 px-6 text-right align-top"><button onclick="enableEdit('{{ exp.id }}')" class="text-blue-500 font-bold text-xs uppercase">Edit</button></td>
+                        </tr>
+                        {% empty %}
+                        <tr id="emptyRow"><td colspan="3" class="py-12 text-center text-gray-400 italic">등록된 증설 이력이 없습니다.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const countryCodeMap = { 'KOREA': 'kr', 'KR': 'kr', 'USA': 'us', 'US': 'us', 'JAPAN': 'jp', 'CHINA': 'cn', 'VIETNAM': 'vn' };
+        const rawCountry = "{{ installbase.country|default:'' }}".toUpperCase().trim();
+        const code = countryCodeMap[rawCountry];
+        if (code) {
+            const flagBase = `https://flagcdn.com/w80/${code}.png`;
+            if (document.getElementById('detail-flag-display')) document.getElementById('detail-flag-display').innerHTML = `<img src="${flagBase}" class="w-full h-full object-cover">`;
+            if (document.getElementById('spec-flag-icon')) document.getElementById('spec-flag-icon').innerHTML = `<img src="${flagBase}" class="w-full h-full object-cover">`;
+        }
+
+        window.toggleExpansionForm = function() { document.getElementById('expansionForm').classList.toggle('hidden'); };
+        window.submitExpansion = function() {
+            const date = document.getElementById('expDate').value;
+            const description = document.getElementById('expDesc').value;
+            if (!date || !description) return;
+            fetch("{% url 'add_expansion_ajax' installbase.pk %}", {
+                method: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/x-www-form-urlencoded" },
+                body: `date=${encodeURIComponent(date)}&description=${encodeURIComponent(description)}`
+            }).then(res => res.json()).then(data => { if(data.status === 'success') location.reload(); });
+        };
+        window.enableEdit = function(id) {
+            const row = document.getElementById(`exp-row-${id}`);
+            const dateCell = row.querySelector('.exp-date-cell');
+            const descCell = row.querySelector('.exp-desc-cell');
+            const actionCell = row.querySelector('td:last-child');
+            const oldDate = dateCell.innerText.trim();
+            const oldDesc = descCell.innerText.trim();
+            dateCell.innerHTML = `<input type="date" id="edit-date-${id}" value="${oldDate}" class="w-full p-2 text-xs border rounded-lg">`;
+            descCell.innerHTML = `<textarea id="edit-desc-${id}" rows="3" class="w-full p-2 text-xs border rounded-lg resize-none">${oldDesc}</textarea>`;
+            actionCell.innerHTML = `<button onclick="saveEdit('${id}')" class="text-green-600 font-bold text-xs uppercase">Save</button>`;
+        };
+        window.saveEdit = function(id) {
+            const newDate = document.getElementById(`edit-date-${id}`).value;
+            const newDesc = document.getElementById(`edit-desc-${id}`).value;
+            fetch(`/expansion/edit/${id}/`, {
+                method: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/x-www-form-urlencoded" },
+                body: `date=${encodeURIComponent(newDate)}&description=${encodeURIComponent(newDesc)}`
+            }).then(res => res.json()).then(data => { if(data.status === 'success') location.reload(); });
+        };
+    });
+</script>
+{% endblock %}
