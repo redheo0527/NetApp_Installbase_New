@@ -167,6 +167,16 @@
                         </div>
                         {% endwith %}
                     {% endfor %}
+                    {% for i in "0123456789"|make_list %}
+                        {% with seed=user.username|add:"netapp"|add:i %}
+                        <div class="cursor-pointer group relative" onclick="selectAvatar('{{ seed }}')">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ seed }}" 
+                                 alt="Avatar {{ seed }}" 
+                                 class="w-full rounded-xl border-2 border-gray-200 group-hover:border-[#0067b1] transition-all shadow-sm">
+                            <div class="absolute inset-0 bg-[#0067b1]/0 group-hover:bg-[#0067b1]/10 rounded-xl transition-all"></div>
+                        </div>
+                        {% endwith %}
+                    {% endfor %}
                 </div>
                 <div class="flex gap-3 justify-end pt-4 border-t border-gray-100">
                     <button onclick="closeAvatarModal()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
