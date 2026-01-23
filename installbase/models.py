@@ -288,7 +288,7 @@ class UserProfile(models.Model):
     
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile', verbose_name='사용자')
     avatar_seed = models.CharField(max_length=100, default='', blank=True, verbose_name='아바타 시드', help_text='DiceBear API에서 사용할 시드 값')
-    rank = models.CharField(max_length=20, choices=RANK_CHOICES, default='researcher', verbose_name='직급')
+    user_rank = models.CharField(max_length=20, choices=RANK_CHOICES, default='researcher', verbose_name='직급', db_column='rank')
     is_resigned = models.BooleanField(default=False, verbose_name='퇴사 여부')
     resigned_date = models.DateField(null=True, blank=True, verbose_name='퇴사일')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -364,4 +364,4 @@ class UserProfile(models.Model):
                 'animation': 'rank-glow-6'
             }
         }
-        return rank_map.get(self.rank, rank_map['researcher'])
+        return rank_map.get(self.user_rank, rank_map['researcher'])

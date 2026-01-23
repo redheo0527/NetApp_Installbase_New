@@ -8,6 +8,7 @@ from .models import (
     Part,
     Issue,
     RMA,
+    UserProfile,
 )
 
 # 1. 장비 모델 관리
@@ -84,3 +85,12 @@ class RMAAdmin(admin.ModelAdmin):
     list_display = ("rma_number", "case_number", "part", "part_quantity", "delivery_region", "delivery_date", "return_status")
     list_filter = ("return_required", "is_delayed", "return_status")
     search_fields = ("rma_number", "part__part_number", "case_number__case_number")
+
+# 9. 사용자 프로필 관리
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "user_rank", "avatar_seed", "is_resigned", "resigned_date")
+    list_filter = ("user_rank", "is_resigned")
+    search_fields = ("user__username", "user__last_name", "user__first_name")
+    fields = ("user", "user_rank", "avatar_seed", "is_resigned", "resigned_date")
+    readonly_fields = ("created_at", "updated_at")
