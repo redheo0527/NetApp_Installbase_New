@@ -87,7 +87,7 @@
         transition: all 0.2s ease;
     }
     .main-row:hover {
-        background-color: rgba(255, 255, 255, 0.5);
+        background-color: #f8fafc;
         transform: translateX(4px);
     }
     .main-row:last-child { border-bottom: none !important; }
@@ -107,57 +107,47 @@
     .page-link.disabled { opacity: 0.5; cursor: not-allowed; }
 </style>
 
-<div class="p-12 pt-0 overflow-y-auto">
-    <div class="max-w-[1600px] mx-auto space-y-12">
-        <!-- Header -->
-        <header class="h-28 flex items-center justify-between sticky top-0 z-30 bg-pattern pb-8">
-            <div>
-                <h1 class="text-2xl font-black text-[#002d5a] tracking-tighter">ONTAP Systems Inventory</h1>
-                <div class="flex items-center gap-2 mt-1">
-                    <div class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping"></div>
-                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Flash Architecture Management</span>
-                </div>
+<div class="max-w-7xl mx-auto py-12 px-6">
+    <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800">ONTAP Systems Inventory</h2>
+            <p class="text-gray-400 mt-1">전체 장비 인벤토리 및 관리</p>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="relative w-[350px]">
+                <input type="text" id="globalSearch" name="q" value="{{ request.GET.q|default:'' }}" 
+                       placeholder="통합 검색..."
+                       class="w-full pl-11 pr-4 py-2.5 rounded-2xl border-none shadow-sm bg-white text-sm focus:ring-2 focus:ring-[#0067B3]">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
             </div>
-            
-            <div class="flex items-center gap-3">
-                <div class="relative hidden sm:block">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input 
-                        type="text" 
-                        id="globalSearch" 
-                        name="q" 
-                        value="{{ request.GET.q|default:'' }}" 
-                        placeholder="장비 ID 또는 클러스터 검색..."
-                        class="pl-10 pr-4 py-2.5 bg-white/50 backdrop-blur-md border border-white/50 rounded-2xl outline-none focus:ring-2 focus:ring-[#0067b1] w-64 text-sm transition-all"
-                    />
-                </div>
-                <button onclick="window.location.href='?'" class="px-4 py-2.5 bg-[#002d5a] text-white rounded-xl text-sm font-bold hover:bg-[#001a35] transition-all shadow-md">초기화</button>
-            </div>
-        </header>
+            <button onclick="window.location.href='?'" class="px-4 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition-all shadow-md">초기화</button>
+        </div>
+    </div>
 
-        <div class="glass-card rounded-[3rem] overflow-hidden">
-            <div class="px-12 py-10 flex justify-between items-end border-b border-white/50 bg-white/30 backdrop-blur-sm">
-                <div class="flex gap-2 items-center">
-                    <span class="px-4 py-1.5 bg-blue-50 text-[#0067B3] rounded-xl text-xs font-bold">전체 {{ page_obj.paginator.count|default:installbases.count }}</span>
-                    <a href="{% url 'installbase_deleted_list' %}" class="text-xs font-bold text-gray-400 hover:text-gray-600 hover:underline">
-                        <i class="fa-solid fa-trash mr-1"></i>삭제된 장비 보기
-                    </a>
-                </div>
-                <div class="flex gap-3 items-center">
-                    <a href="{% url 'export_installbase_excel' %}" class="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-tighter hover:shadow-lg transition-all">
-                        <i class="fa-solid fa-file-excel mr-1"></i> 엑셀 다운로드
-                    </a>
-                    <a href="{% url 'installbase_create' %}" class="px-5 py-2.5 bg-[#0067b1] text-white rounded-xl text-[11px] font-black uppercase tracking-tighter shadow-xl shadow-blue-500/30 hover:scale-105 transition-all">
-                        <i class="fa-solid fa-plus mr-1"></i> 신규 장비 등록
-                    </a>
-                </div>
+    <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-50 overflow-hidden">
+        <div class="p-8 border-b border-gray-50 flex justify-between items-center">
+            <div class="flex gap-2 items-center">
+                <span class="px-4 py-1.5 bg-blue-50 text-[#0067B3] rounded-xl text-xs font-bold">전체 {{ page_obj.paginator.count|default:installbases.count }}</span>
+                <a href="{% url 'installbase_deleted_list' %}" class="text-xs font-bold text-gray-400 hover:text-gray-600 hover:underline">
+                    <i class="fa-solid fa-trash mr-1"></i>삭제된 장비 보기
+                </a>
+            </div>
+            <div class="flex gap-3 items-center">
+                <a href="{% url 'export_installbase_excel' %}" class="text-sm font-bold text-green-600 hover:text-green-700 hover:underline">
+                    <i class="fa-solid fa-file-excel mr-1"></i> 엑셀 다운로드
+                </a>
+                <a href="{% url 'installbase_create' %}" class="text-sm font-bold text-[#0067B3] hover:underline">
+                    <i class="fa-solid fa-plus mr-1"></i> 신규 장비 등록
+                </a>
+            </div>
             </div>
             
-            <div class="p-4 overflow-x-auto">
-                <table id="inventoryTable" class="w-full text-left border-separate border-spacing-y-4 min-w-[1300px] px-8">
+        <div class="overflow-x-auto rounded-[2rem]">
+            <table id="inventoryTable" class="w-full text-left border-collapse min-w-[1300px]">
                     <thead>
-                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                            <th class="px-6 py-4 customer-column">
+                        <tr class="text-gray-400 text-[10px] uppercase tracking-widest bg-gray-50/50 border-b border-gray-200">
+                            <th class="px-8 py-4 font-bold customer-column">
                                 <div class="th-content">
                                     <div class="filter-trigger" id="ft-0">
                                         <i class="fa-solid fa-filter"></i>
@@ -176,7 +166,7 @@
                                     <span class="sort-trigger" onclick="sortTable(0, this)">Customer <i class="fa-solid fa-sort sort-icon"></i></span>
                                 </div>
                             </th>
-                            <th class="px-6 py-4">
+                            <th class="px-6 py-4 font-bold">
                                 <div class="th-content">
                                     <div class="filter-trigger" id="ft-1">
                                         <i class="fa-solid fa-filter"></i>
@@ -195,16 +185,16 @@
                                     <span class="sort-trigger" onclick="sortTable(1, this)">System Info <i class="fa-solid fa-sort sort-icon"></i></span>
                                 </div>
                             </th>
-                            <th class="px-6 py-4 text-center">Serial & Nodes</th>
-                            <th class="px-6 py-4 text-center">Inspection</th>
-                            <th class="px-6 py-4 text-center sort-trigger" onclick="sortTable(4, this)">Contract End <i class="fa-solid fa-sort sort-icon"></i></th>
-                            <th class="px-8 py-4 text-right">Detail</th>
+                            <th class="px-6 py-4 font-bold text-center">Serial & Nodes</th>
+                            <th class="px-6 py-4 font-bold text-center">Inspection</th>
+                            <th class="px-6 py-4 font-bold text-center sort-trigger" onclick="sortTable(4, this)">Contract End <i class="fa-solid fa-sort sort-icon"></i></th>
+                            <th class="px-8 py-4 font-bold text-right">Detail</th>
                         </tr>
                     </thead>
-                    <tbody class="border-separate border-spacing-y-4">
+                    <tbody class="divide-y divide-gray-50">
                         {% for item in installbases %}
-                        <tr class="main-row group hover:scale-[1.01] transition-all duration-300" data-contract-val="{{ item.contract_end_date|date:'Ymd'|default:'00000000' }}">
-                            <td class="bg-white/60 group-hover:bg-white rounded-l-3xl px-8 py-6 border border-white customer-column text-center data-cell" data-col="0">
+                        <tr class="main-row" data-contract-val="{{ item.contract_end_date|date:'Ymd'|default:'00000000' }}">
+                            <td class="px-8 py-3 customer-column text-center data-cell" data-col="0">
                                 <div class="flex flex-col items-center">
                                     <div class="logo-container">
                                         {% if item.customer.logo %}
@@ -217,10 +207,10 @@
                                 </div>
                             </td>
 
-                            <td class="bg-white/60 group-hover:bg-white px-8 py-6 border-y border-white data-cell" data-col="1">
+                            <td class="px-6 py-3 data-cell" data-col="1">
                                 <div class="flex flex-col">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-lg font-black text-[#0067b1]">{{ item.cluster_name }}</span>
+                                        <span class="text-lg font-black text-[#0067B3]">{{ item.cluster_name }}</span>
                                         {% if item.country %}
                                             <span class="country-flag-list inline-block w-8 h-5 overflow-hidden rounded-sm bg-gray-50 border border-gray-200" data-country="{{ item.country|upper }}"></span>
                                         {% endif %}
@@ -228,7 +218,7 @@
                                     <div class="flex items-center gap-1.5 mt-0.5">
                                         {% with m_str=item.cluster_model_names|join:" " %}
                                             {% if "AFF" in m_str or " A" in m_str or " C" in m_str or item.cluster_model_names.0|slice:":1" == "A" or item.cluster_model_names.0|slice:":1" == "C" %}
-                                                <span class="px-1.5 py-0.5 bg-[#0067b1] text-[9px] font-black text-white rounded italic">AFF</span>
+                                                <span class="px-1.5 py-0.5 bg-[#0067B3] text-[9px] font-black text-white rounded italic">AFF</span>
                                             {% endif %}
                                             {% if "FAS" in m_str %}
                                                 <span class="px-1.5 py-0.5 bg-gray-900 text-[9px] font-black text-white rounded italic">FAS</span>
@@ -246,7 +236,7 @@
                                 </div>
                             </td>
 
-                            <td class="bg-white/60 group-hover:bg-white px-8 py-6 border-y border-white text-center">
+                            <td class="px-6 py-3 text-center">
                                 <div class="sn-wrapper {% if item.cluster_serial_numbers|length > 2 %}has-more{% endif %}">
                                     {% for serial in item.cluster_serial_numbers|slice:":2" %}
                                         <span class="sn-badge">{{ serial }}</span>
@@ -269,7 +259,7 @@
                                 </div>
                             </td>
 
-                            <td class="bg-white/60 group-hover:bg-white px-8 py-6 border-y border-white text-center">
+                            <td class="px-6 py-3 text-center">
                                 {% if item.periodic_inspection == 'monthly' %}
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg text-[11px] font-bold border border-blue-100 shadow-sm">
                                         <i class="fa-solid fa-clock-rotate-left"></i>월점검
@@ -285,15 +275,15 @@
                                 {% endif %}
                             </td>
 
-                            <td class="bg-white/60 group-hover:bg-white px-8 py-6 border-y border-white text-center data-cell" data-col="4">
-                                <span class="text-sm font-black {% if item.days_left <= 0 %}text-red-600{% else %}text-[#0067b1]{% endif %}">
+                            <td class="px-6 py-3 text-center data-cell" data-col="4">
+                                <span class="text-sm font-black {% if item.days_left <= 0 %}text-red-600{% else %}text-blue-600{% endif %}">
                                     {{ item.contract_end_date|date:"Y. m. d" }}
                                 </span>
                             </td>
 
-                            <td class="bg-white/60 group-hover:bg-white rounded-r-3xl px-8 py-6 text-right border border-white">
-                                <a href="{% url 'installbase_detail' item.pk %}" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white/60 hover:bg-[#0067b1] text-gray-400 hover:text-white transition-all shadow-sm border border-white">
-                                    <i class="fa-solid fa-arrow-right text-sm"></i>
+                            <td class="px-8 py-3 text-right">
+                                <a href="{% url 'installbase_detail' item.pk %}" class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 text-gray-300 hover:bg-[#0067B3] hover:text-white transition-all">
+                                    <i class="fa-solid fa-arrow-right text-xs"></i>
                                 </a>
                             </td>
                         </tr>
