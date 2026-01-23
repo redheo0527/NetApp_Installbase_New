@@ -123,8 +123,8 @@
             <div class="bg-white rounded-3xl p-6 shadow-lg border border-gray-100">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="relative cursor-pointer group" onclick="openAvatarModal()">
-                        {% if user.profile.avatar_seed %}
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user.profile.avatar_seed }}" 
+                        {% if user_profile and user_profile.avatar_seed %}
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user_profile.avatar_seed }}" 
                                  alt="Avatar" 
                                  class="w-12 h-12 rounded-2xl border-2 border-gray-200 hover:border-[#0067b1] transition-all shadow-md">
                         {% else %}
