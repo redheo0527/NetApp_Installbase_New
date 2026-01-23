@@ -5,7 +5,7 @@
     body { overflow-x: hidden; background-color: #f8fafc; }
     
     /* 레이아웃 및 고객사 스타일 */
-    .customer-column { min-width: 200px; white-space: nowrap; }
+    .customer-column { min-width: 180px; white-space: nowrap; }
     .logo-container {
         width: 90px; height: 55px; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center;
@@ -144,10 +144,10 @@
             </div>
             
         <div class="overflow-x-auto rounded-[2rem]">
-            <table id="inventoryTable" class="w-full text-left border-collapse min-w-[1300px]">
+            <table id="inventoryTable" class="w-full text-left border-collapse">
                     <thead>
                         <tr class="text-gray-400 text-[10px] uppercase tracking-widest bg-gray-50/50 border-b border-gray-200">
-                            <th class="px-8 py-4 font-bold customer-column">
+                            <th class="px-6 py-4 font-bold customer-column" style="width: 15%;">
                                 <div class="th-content">
                                     <div class="filter-trigger" id="ft-0">
                                         <i class="fa-solid fa-filter"></i>
@@ -166,7 +166,7 @@
                                     <span class="sort-trigger" onclick="sortTable(0, this)">Customer <i class="fa-solid fa-sort sort-icon"></i></span>
                                 </div>
                             </th>
-                            <th class="px-6 py-4 font-bold">
+                            <th class="px-6 py-4 font-bold" style="width: 25%;">
                                 <div class="th-content">
                                     <div class="filter-trigger" id="ft-1">
                                         <i class="fa-solid fa-filter"></i>
@@ -185,16 +185,16 @@
                                     <span class="sort-trigger" onclick="sortTable(1, this)">System Info <i class="fa-solid fa-sort sort-icon"></i></span>
                                 </div>
                             </th>
-                            <th class="px-6 py-4 font-bold text-center">Serial & Nodes</th>
-                            <th class="px-6 py-4 font-bold text-center">Inspection</th>
-                            <th class="px-6 py-4 font-bold text-center sort-trigger" onclick="sortTable(4, this)">Contract End <i class="fa-solid fa-sort sort-icon"></i></th>
-                            <th class="px-8 py-4 font-bold text-right">Detail</th>
+                            <th class="px-6 py-4 font-bold text-center" style="width: 15%;">Serial & Nodes</th>
+                            <th class="px-6 py-4 font-bold text-center" style="width: 12%;">Inspection</th>
+                            <th class="px-6 py-4 font-bold text-center sort-trigger" style="width: 13%;" onclick="sortTable(4, this)">Contract End <i class="fa-solid fa-sort sort-icon"></i></th>
+                            <th class="px-6 py-4 font-bold text-right" style="width: 8%;">Detail</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
                         {% for item in installbases %}
                         <tr class="main-row" data-contract-val="{{ item.contract_end_date|date:'Ymd'|default:'00000000' }}">
-                            <td class="px-8 py-3 customer-column text-center data-cell" data-col="0">
+                            <td class="px-6 py-3 customer-column text-center data-cell" data-col="0" style="width: 15%;">
                                 <div class="flex flex-col items-center">
                                     <div class="logo-container">
                                         {% if item.customer.logo %}
@@ -207,7 +207,7 @@
                                 </div>
                             </td>
 
-                            <td class="px-6 py-3 data-cell" data-col="1">
+                            <td class="px-6 py-3 data-cell" data-col="1" style="width: 25%;">
                                 <div class="flex flex-col">
                                     <div class="flex items-center gap-2">
                                         <span class="text-lg font-black text-[#0067B3]">{{ item.cluster_name }}</span>
@@ -236,7 +236,7 @@
                                 </div>
                             </td>
 
-                            <td class="px-6 py-3 text-center">
+                            <td class="px-6 py-3 text-center" style="width: 15%;">
                                 <div class="sn-wrapper {% if item.cluster_serial_numbers|length > 2 %}has-more{% endif %}">
                                     {% for serial in item.cluster_serial_numbers|slice:":2" %}
                                         <span class="sn-badge">{{ serial }}</span>
@@ -259,7 +259,7 @@
                                 </div>
                             </td>
 
-                            <td class="px-6 py-3 text-center">
+                            <td class="px-6 py-3 text-center" style="width: 12%;">
                                 {% if item.periodic_inspection == 'monthly' %}
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg text-[11px] font-bold border border-blue-100 shadow-sm">
                                         <i class="fa-solid fa-clock-rotate-left"></i>월점검
@@ -275,13 +275,13 @@
                                 {% endif %}
                             </td>
 
-                            <td class="px-6 py-3 text-center data-cell" data-col="4">
+                            <td class="px-6 py-3 text-center data-cell" data-col="4" style="width: 13%;">
                                 <span class="text-sm font-black {% if item.days_left <= 0 %}text-red-600{% else %}text-blue-600{% endif %}">
                                     {{ item.contract_end_date|date:"Y. m. d" }}
                                 </span>
                             </td>
 
-                            <td class="px-8 py-3 text-right">
+                            <td class="px-6 py-3 text-right" style="width: 8%;">
                                 <a href="{% url 'installbase_detail' item.pk %}" class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 text-gray-300 hover:bg-[#0067B3] hover:text-white transition-all">
                                     <i class="fa-solid fa-arrow-right text-xs"></i>
                                 </a>
