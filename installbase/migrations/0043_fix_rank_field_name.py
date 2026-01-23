@@ -3,11 +3,6 @@
 from django.db import migrations, models
 
 
-def noop(apps, schema_editor):
-    """아무 작업도 하지 않음"""
-    pass
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -15,11 +10,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # 만약 rank 컬럼이 이미 존재한다면 user_rank로 변경
-        migrations.RunSQL(
-            sql="ALTER TABLE installbase_userprofile RENAME COLUMN rank TO user_rank;",
-            reverse_sql="ALTER TABLE installbase_userprofile RENAME COLUMN user_rank TO rank;",
-        ),
-        # 또는 필드가 아직 없다면 그냥 넘어감
-        migrations.RunPython(noop, noop),
+        # 0041에서 이미 user_rank로 생성되었으므로 추가 작업 불필요
+        # 만약 서버에서 rank로 생성되었다면 수동으로 다음 SQL 실행:
+        # ALTER TABLE installbase_userprofile RENAME COLUMN rank TO user_rank;
     ]
