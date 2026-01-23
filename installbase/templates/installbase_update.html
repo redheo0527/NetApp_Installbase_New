@@ -406,19 +406,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 고객사 변경 시 실시간 미리보기 업데이트
-    const customerSelect = document.querySelector('select[name="customer"]');
+    const customerSelect = document.querySelector('select[name="customer"]') || document.getElementById('id_customer');
     if (customerSelect) {
         customerSelect.addEventListener('change', function() {
             updatePreview(this, 'customer-logo-preview', 'customer');
         });
+        // 초기 로드 시에도 한 번 실행
+        updatePreview(customerSelect, 'customer-logo-preview', 'customer');
     }
     
     // 제품 변경 시 실시간 미리보기 업데이트
-    const productSelect = document.querySelector('select[name="product"]');
+    const productSelect = document.querySelector('select[name="product"]') || document.getElementById('id_product');
     if (productSelect) {
         productSelect.addEventListener('change', function() {
             updatePreview(this, 'product-image-preview', 'product');
         });
+        // 초기 로드 시에도 한 번 실행
+        updatePreview(productSelect, 'product-image-preview', 'product');
     }
     
     // 노드 번호 관련 기능

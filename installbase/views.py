@@ -782,7 +782,7 @@ def clusterswitch_list(request):
     
     # 정렬 처리
     sort_col = request.GET.get('sort_col')
-    sort_order = request.GET.get('sort_order', 'desc')
+    sort_order = request.GET.get('sort_order', 'asc')
     
     if sort_col:
         try:
@@ -1104,7 +1104,7 @@ def issue_list(request):
     
     # 정렬 처리
     sort_col = request.GET.get('sort_col')
-    sort_order = request.GET.get('sort_order', 'desc')
+    sort_order = request.GET.get('sort_order', 'asc')
     
     if sort_col:
         try:
@@ -1130,7 +1130,7 @@ def issue_list(request):
         incomplete = []
         complete = []
         for issue in issues_list:
-            if issue.status != 'closed':
+            if issue.status != '종료':
                 incomplete.append(issue)
             else:
                 complete.append(issue)
@@ -1141,13 +1141,13 @@ def issue_list(request):
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
     else:
-        # 기본 정렬: 완료되지 않은 케이스(status != 'closed')를 먼저, 그 다음 완료된 케이스
+        # 기본 정렬: 완료되지 않은 케이스(status != '종료')를 먼저, 그 다음 완료된 케이스
         # 완료되지 않은 케이스는 발생일자 오래된 순, 완료된 케이스도 발생일자 오래된 순
         issues_list = list(issues)
         incomplete = []
         complete = []
         for issue in issues_list:
-            if issue.status != 'closed':
+            if issue.status != '종료':
                 incomplete.append(issue)
             else:
                 complete.append(issue)
@@ -1441,7 +1441,7 @@ def rma_list(request):
     
     # 정렬 처리
     sort_col = request.GET.get('sort_col')
-    sort_order = request.GET.get('sort_order', 'desc')
+    sort_order = request.GET.get('sort_order', 'asc')
     
     if sort_col:
         try:
