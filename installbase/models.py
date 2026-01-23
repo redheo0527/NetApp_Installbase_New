@@ -136,7 +136,7 @@ class InstallBase(models.Model):
     node2_mgmt_ip = models.CharField(max_length=200, null=True, blank=True, verbose_name='두번째 노드 Management IP')
     node1_bmc_ip = models.CharField(max_length=200, null=True, blank=True, verbose_name='첫번째 노드 BMC IP')
     node2_bmc_ip = models.CharField(max_length=200, null=True, blank=True, verbose_name='두번째 노드 BMC IP')
-    other_ips = models.TextField(blank=True, verbose_name='그 외 IP')
+    other_ips = models.TextField(blank=True, null=True, verbose_name='그 외 IP')
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
