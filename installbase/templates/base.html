@@ -64,6 +64,16 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
+        /* 아바타 모달 최상위 표시 */
+        #avatarModal {
+            z-index: 999999 !important;
+            position: fixed !important;
+        }
+        #avatarModal > div {
+            z-index: 1000000 !important;
+            position: relative !important;
+        }
+        
         /* 직급별 아바타 효과 */
         .avatar-container {
             position: relative;
@@ -213,8 +223,8 @@
         </div>
         
         <!-- 아바타 선택 모달 -->
-        <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 99999 !important; position: fixed !important;" onclick="closeAvatarModal(event)">
-            <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col relative" style="z-index: 100000 !important; position: relative !important;" onclick="event.stopPropagation()">
+        <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 999999 !important; position: fixed !important;" onclick="closeAvatarModal(event)">
+            <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col relative" style="z-index: 1000000 !important; position: relative !important;" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xl font-black text-gray-800">아바타 선택</h3>
                     <button onclick="closeAvatarModal()" class="text-gray-400 hover:text-gray-600 transition">
