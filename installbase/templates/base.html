@@ -63,6 +63,43 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* 직급별 아바타 효과 */
+        .avatar-container {
+            position: relative;
+        }
+        .avatar-glow {
+            position: absolute;
+            inset: -4px;
+            border-radius: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .avatar-container:hover .avatar-glow {
+            opacity: 1;
+        }
+        .rank-glow-5 {
+            animation: rotate-glow 3s linear infinite;
+        }
+        .rank-glow-6 {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        @keyframes rotate-glow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.05); }
+        }
+        .avatar-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            font-size: 16px;
+            z-index: 10;
+        }
     </style>
 </head>
 <body class="bg-pattern text-slate-800 flex min-h-screen">
@@ -122,23 +159,51 @@
         <div class="p-8">
             <div class="bg-white rounded-3xl p-6 shadow-lg border border-gray-100">
                 <div class="flex items-center gap-3 mb-4">
-                    <div class="relative cursor-pointer group" onclick="openAvatarModal()">
-                        {% if user_profile and user_profile.avatar_seed %}
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user_profile.avatar_seed }}" 
-                                 alt="Avatar" 
-                                 class="w-12 h-12 rounded-2xl border-2 border-gray-200 hover:border-[#0067b1] transition-all shadow-md">
+                    <div class="avatar-container cursor-pointer group relative" onclick="openAvatarModal()">
+                        {% if user_profile %}
+                            {% with rank_data=user_profile.get_rank_data %}
+                            {% if user_profile.avatar_seed %}
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user_profile.avatar_seed }}" 
+                                     alt="Avatar" 
+                                     class="w-12 h-12 rounded-2xl border-2 transition-all shadow-md relative z-10"
+                                     style="border-color: {{ rank_data.border_color }};">
+                            {% else %}
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user.username }}" 
+                                     alt="Avatar" 
+                                     class="w-12 h-12 rounded-2xl border-2 transition-all shadow-md relative z-10"
+                                     style="border-color: {{ rank_data.border_color }};">
+                            {% endif %}
+                            {% if rank_data.glow_opacity != '0' %}
+                            <div class="avatar-glow {{ rank_data.glow_color }} {{ rank_data.animation }}" 
+                                 style="opacity: 0.{{ rank_data.glow_opacity }}; filter: blur(8px);"></div>
+                            {% endif %}
+                            {% if rank_data.badge %}
+                            <div class="avatar-badge">{{ rank_data.badge }}</div>
+                            {% endif %}
+                            {% endwith %}
                         {% else %}
                             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user.username }}" 
                                  alt="Avatar" 
-                                 class="w-12 h-12 rounded-2xl border-2 border-gray-200 hover:border-[#0067b1] transition-all shadow-md">
+                                 class="w-12 h-12 rounded-2xl border-2 border-gray-200 transition-all shadow-md relative z-10">
                         {% endif %}
-                        <div class="absolute inset-0 bg-black/0 hover:bg-black/10 rounded-2xl transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div class="absolute inset-0 bg-black/0 hover:bg-black/10 rounded-2xl transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 z-20">
                             <i class="fa-solid fa-camera text-white text-xs"></i>
                         </div>
                     </div>
                     <div class="flex-1">
-                        <h4 class="text-sm font-black text-gray-800 mb-0.5">{{ user.last_name }}{{ user.first_name|default:"" }}</h4>
-                        <p class="text-[10px] text-gray-400 font-medium tracking-tight">NetApp Certified Engineer</p>
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-sm font-black text-gray-800 mb-0.5">{{ user.last_name }}{{ user.first_name|default:"" }}</h4>
+                            {% if user_profile %}
+                                {% with rank_data=user_profile.get_rank_data %}
+                                {% if rank_data.badge %}
+                                <span class="text-xs">{{ rank_data.badge }}</span>
+                                {% endif %}
+                                {% endwith %}
+                            {% endif %}
+                        </div>
+                        <p class="text-[10px] text-gray-400 font-medium tracking-tight">
+                            {% if user_profile %}{{ user_profile.get_rank_display }}{% else %}NetApp Certified Engineer{% endif %}
+                        </p>
                     </div>
                 </div>
                 <a href="/admin/logout/" class="block w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-[11px] font-bold transition-all text-center">
@@ -148,8 +213,8 @@
         </div>
         
         <!-- 아바타 선택 모달 -->
-        <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 9999;" onclick="closeAvatarModal(event)">
-            <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col relative" style="z-index: 10000;" onclick="event.stopPropagation()">
+        <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 99999 !important; position: fixed !important;" onclick="closeAvatarModal(event)">
+            <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col relative" style="z-index: 100000 !important; position: relative !important;" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xl font-black text-gray-800">아바타 선택</h3>
                     <button onclick="closeAvatarModal()" class="text-gray-400 hover:text-gray-600 transition">

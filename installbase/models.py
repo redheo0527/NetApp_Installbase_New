@@ -277,8 +277,18 @@ class NetAppAPIConfig(models.Model):
 
 class UserProfile(models.Model):
     """사용자 프로필 모델"""
+    RANK_CHOICES = [
+        ('researcher', '연구원'),
+        ('senior_researcher', '선임연구원'),
+        ('chief_researcher', '책임연구원'),
+        ('lead_researcher', '수석연구원'),
+        ('team_leader', '팀장'),
+        ('division_head', '사업부장'),
+    ]
+    
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile', verbose_name='사용자')
     avatar_seed = models.CharField(max_length=100, default='', blank=True, verbose_name='아바타 시드', help_text='DiceBear API에서 사용할 시드 값')
+    rank = models.CharField(max_length=20, choices=RANK_CHOICES, default='researcher', verbose_name='직급')
     is_resigned = models.BooleanField(default=False, verbose_name='퇴사 여부')
     resigned_date = models.DateField(null=True, blank=True, verbose_name='퇴사일')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -295,3 +305,63 @@ class UserProfile(models.Model):
         """DiceBear API를 사용한 아바타 URL 생성"""
         seed = self.avatar_seed or self.user.username
         return f"https://api.dicebear.com/7.x/avataaars/svg?seed={seed}"
+    
+    def get_rank_data(self):
+        """직급별로 서로 다른 후광(Glow), 테두리(Border), 배지(Badge) 데이터를 반환합니다."""
+        rank_map = {
+            'researcher': {
+                'level': 1, 
+                'label': '연구원',
+                'badge': '', 
+                'glow_color': 'bg-slate-400',
+                'border_color': '#e2e8f0',
+                'glow_opacity': '0',
+                'animation': ''
+            },
+            'senior_researcher': {
+                'level': 2, 
+                'label': '선임연구원',
+                'badge': '🔹', 
+                'glow_color': 'bg-sky-400',
+                'border_color': '#38bdf8',
+                'glow_opacity': '40',
+                'animation': ''
+            },
+            'chief_researcher': {
+                'level': 3, 
+                'label': '책임연구원',
+                'badge': '💠', 
+                'glow_color': 'bg-indigo-500',
+                'border_color': '#6366f1',
+                'glow_opacity': '50',
+                'animation': ''
+            },
+            'lead_researcher': {
+                'level': 4, 
+                'label': '수석연구원',
+                'badge': '🔮', 
+                'glow_color': 'bg-purple-600',
+                'border_color': '#a855f7',
+                'glow_opacity': '60',
+                'animation': ''
+            },
+            'team_leader': {
+                'level': 5, 
+                'label': '팀장',
+                'badge': '🔱', 
+                'glow_color': 'bg-emerald-500',
+                'border_color': 'transparent',
+                'glow_opacity': '60',
+                'animation': 'rank-glow-5'
+            },
+            'division_head': {
+                'level': 6, 
+                'label': '사업부장',
+                'badge': '👑', 
+                'glow_color': 'bg-amber-500',
+                'border_color': 'transparent',
+                'glow_opacity': '80',
+                'animation': 'rank-glow-6'
+            }
+        }
+        return rank_map.get(self.rank, rank_map['researcher'])
