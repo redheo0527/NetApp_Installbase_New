@@ -168,9 +168,19 @@
                                 </div>
                             </div>
                             <div class="mt-6 flex items-center justify-between">
-                                <span class="text-[10px] font-black px-2 py-1 bg-white border border-gray-200 rounded-md shadow-sm">
+                                {% if issue.issue_type == 'part_replacement' %}
+                                <span class="text-[10px] font-black px-2 py-1 bg-green-100 text-green-700 border border-green-200 rounded-md shadow-sm">
                                     {{ issue.get_issue_type_display }}
                                 </span>
+                                {% elif issue.issue_type == 'service_outage' %}
+                                <span class="text-[10px] font-black px-2 py-1 bg-red-100 text-red-700 border border-red-200 rounded-md shadow-sm">
+                                    {{ issue.get_issue_type_display }}
+                                </span>
+                                {% else %}
+                                <span class="text-[10px] font-black px-2 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-md shadow-sm">
+                                    {{ issue.get_issue_type_display }}
+                                </span>
+                                {% endif %}
                                 <span class="text-[#0067b1] text-xs font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                                     상세보기 <i class="fa-solid fa-chevron-right" style="font-size: 14px;"></i>
                                 </span>

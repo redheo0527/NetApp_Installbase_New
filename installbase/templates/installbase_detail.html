@@ -145,9 +145,12 @@
         <div class="lg:col-span-2 space-y-8 animate-slide-up" style="animation-delay: 0.1s;">
 
             <div class="info-card flex flex-col md:flex-row gap-10 items-center overflow-hidden">
-                <div class="w-full md:w-1/3 flex justify-center">
+                <div class="w-full md:w-1/3 flex flex-col items-center gap-4">
                     {% if installbase.product.image %}<img src="{{ installbase.product.image.url }}" class="w-full max-w-[240px] drop-shadow-2xl">
                     {% else %}<div class="w-48 h-48 bg-gray-50 rounded-3xl flex items-center justify-center"><i class="fa-solid fa-box text-gray-200 text-6xl"></i></div>{% endif %}
+                    <div class="text-center">
+                        <p class="text-sm font-bold text-gray-700">{{ installbase.product.model_name }}</p>
+                    </div>
                 </div>
                 <div class="flex-1 space-y-6">
                     <div class="grid grid-cols-2 gap-4">
@@ -678,11 +681,23 @@
             `<img src="${node.product_image_url}" class="w-full max-w-[240px] drop-shadow-2xl">` : 
             `<div class="w-48 h-48 bg-gray-50 rounded-3xl flex items-center justify-center"><i class="fa-solid fa-box text-gray-200 text-6xl"></i></div>`;
         
+        // 뱃지 생성
+        const modelName = node.product_model_name || '';
+        let badgeHtml = '';
+        if (modelName.includes('AFF') || modelName.startsWith('A') || modelName.startsWith('C')) {
+            badgeHtml = '<span class="px-1.5 py-0.5 bg-[#0067B3] text-[9px] font-black text-white rounded italic mr-1.5">AFF</span>';
+        } else if (modelName.includes('FAS')) {
+            badgeHtml = '<span class="px-1.5 py-0.5 bg-gray-900 text-[9px] font-black text-white rounded italic mr-1.5">FAS</span>';
+        }
+        
         detailContainer.innerHTML = `
             <div class="info-card flex flex-col gap-8 overflow-hidden">
                 <div class="flex flex-col items-center gap-4">
                     ${productImageHtml}
-                    <p class="text-lg font-bold text-gray-800">${node.product_model_name || '-'}</p>
+                    <div class="flex items-center gap-1.5">
+                        ${badgeHtml}
+                        <p class="text-lg font-bold text-gray-800">${modelName}</p>
+                    </div>
             </div>
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
