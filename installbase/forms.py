@@ -19,9 +19,12 @@ class SwitchModelForm(forms.ModelForm):
 class IssueForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         target_node_id = kwargs.pop('target_node_id', None)
+        target_cluster_id = kwargs.pop('target_cluster_id', None)
         super().__init__(*args, **kwargs)
         if target_node_id:
             self.fields['target_node'].initial = target_node_id
+        if target_cluster_id:
+            self.fields['target_cluster'].initial = target_cluster_id
     
     class Meta:
         model = Issue

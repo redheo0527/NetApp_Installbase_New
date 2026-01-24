@@ -1129,6 +1129,8 @@ def issue_list(request):
             Q(case_number__icontains=query) |
             Q(target_cluster__cluster_name__icontains=query) |
             Q(target_node__cluster_name__icontains=query) |
+            Q(target_node__serial_number_1__icontains=query) |
+            Q(target_node__serial_number_2__icontains=query) |
             Q(status__icontains=query)
         )
     else:
@@ -1241,9 +1243,10 @@ def issue_deleted_list(request):
 def issue_create(request):
     """이슈 신규 등록"""
     target_node_id = request.GET.get('target_node', None)
+    target_cluster_id = request.GET.get('target_cluster', None)
     
     if request.method == "POST":
-        form = IssueForm(request.POST, target_node_id=target_node_id)
+        form = IssueForm(request.POST, target_node_id=target_node_id, target_cluster_id=target_cluster_id)
         if form.is_valid():
             obj = form.save(commit=False)
             # target_node_number 저장
@@ -1268,7 +1271,7 @@ def issue_create(request):
             obj.save()
             return redirect('issue_list')
     else:
-        form = IssueForm(target_node_id=target_node_id)
+        form = IssueForm(target_node_id=target_node_id, target_cluster_id=target_cluster_id)
         # 엔지니어 이름을 성+이름으로 표시하도록 수정 (활성화된 유저만)
         User = get_user_model()
         form.fields['assigned_engineer'].choices = [

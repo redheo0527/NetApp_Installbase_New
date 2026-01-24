@@ -400,6 +400,18 @@
                     <p class="text-sm text-gray-400 italic">등록된 타임라인 정보가 없습니다.</p>
                     {% endif %}
                 </div>
+                <div class="mt-6 pt-6 border-t border-blue-200">
+                    <div class="flex gap-3">
+                        <a href="{% url 'issue_create' %}?target_cluster={{ installbase.pk }}" 
+                           class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition text-sm text-center">
+                            <i class="fa-solid fa-plus mr-2"></i>이슈 등록
+                        </a>
+                        <a href="{% url 'issue_list' %}?q={% if installbase.serial_number_1 %}{{ installbase.serial_number_1 }}{% elif installbase.serial_number_2 %}{{ installbase.serial_number_2 }}{% endif %}" 
+                           class="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition text-sm text-center">
+                            <i class="fa-solid fa-search mr-2"></i>이슈 조회
+                        </a>
+                    </div>
+                </div>
             </div>
 
             <div class="info-card">
@@ -786,6 +798,18 @@
                                 </div>
                             `).join('') + '</div>';
                     })()}
+                    <div class="mt-6 pt-6 border-t border-blue-200">
+                        <div class="flex gap-3">
+                            <a href="/issue/create/?target_cluster=${node.pk}" 
+                               class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition text-sm text-center">
+                                <i class="fa-solid fa-plus mr-2"></i>이슈 등록
+                            </a>
+                            <a href="/issue/?q=${node.serial_number_1 || node.serial_number_2 || ''}" 
+                               class="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition text-sm text-center">
+                                <i class="fa-solid fa-search mr-2"></i>이슈 조회
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="info-card">
