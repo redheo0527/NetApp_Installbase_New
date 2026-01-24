@@ -394,6 +394,29 @@
         }
     });
     
+    // 초기 로드 시 target_cluster_id가 있으면 클러스터 자동 선택
+    {% if request.GET.target_cluster %}
+    const targetClusterId = {{ request.GET.target_cluster }};
+    fetch(`/ajax/get-cluster-info/?cluster_id=${targetClusterId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.cluster) {
+                selectedClusterId = data.cluster.id;
+                selectedClusterName = data.cluster.cluster_name;
+                document.getElementById('id_target_cluster').value = data.cluster.id;
+                document.getElementById('target_cluster_display').value = data.cluster.cluster_name;
+                
+                // 노드 필드 활성화
+                document.getElementById('target_node_display').disabled = false;
+                document.getElementById('target_node_display').placeholder = '노드를 선택하세요';
+                document.getElementById('nodeSearchBtn').disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    {% endif %}
+    
     // 초기 로드 시 target_node_id가 있으면 클러스터만 자동 선택 (노드는 선택하지 않음)
     {% if request.GET.target_node %}
     const targetNodeId = {{ request.GET.target_node }};

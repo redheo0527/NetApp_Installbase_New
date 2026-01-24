@@ -59,6 +59,7 @@ urlpatterns = [
     path('ajax/get-customers/', views.get_customers_ajax, name='get_customers_ajax'),
     path('ajax/get-nodes-by-cluster/', views.get_nodes_by_cluster_ajax, name='get_nodes_by_cluster_ajax'),
     path('ajax/get-node-info/', views.get_node_info_ajax, name='get_node_info_ajax'),
+    path('ajax/get-cluster-info/', views.get_cluster_info_ajax, name='get_cluster_info_ajax'),
     path('ajax/get-cases/', views.get_cases_ajax, name='get_cases_ajax'),
     path('ajax/get-issues-api/', views.get_issues_api, name='get_issues_api'),
     path('ajax/clusterswitch/<int:pk>/storages/', views.clusterswitch_storages, name='clusterswitch_storages'),

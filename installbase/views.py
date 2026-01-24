@@ -2036,6 +2036,26 @@ def get_node_info_ajax(request):
         return JsonResponse({'node': None})
 
 @login_required
+def get_cluster_info_ajax(request):
+    """클러스터 정보 조회 (AJAX)"""
+    cluster_id = request.GET.get('cluster_id')
+    
+    if not cluster_id:
+        return JsonResponse({'cluster': None})
+    
+    try:
+        cluster = InstallBase.objects.get(pk=cluster_id, deleted_at__isnull=True)
+        
+        return JsonResponse({
+            'cluster': {
+                'id': cluster.id,
+                'cluster_name': cluster.cluster_name or ''
+            }
+        })
+    except InstallBase.DoesNotExist:
+        return JsonResponse({'cluster': None})
+
+@login_required
 def get_cases_ajax(request):
     """케이스 번호 검색 (AJAX) - 진행중인 케이스만, 페이지네이션"""
     query = request.GET.get('q', '').strip()
