@@ -54,12 +54,12 @@
                     </div>
                     <div>
                         <p class="text-xs font-bold text-gray-400 uppercase mb-2">진행 상태</p>
-                        {% if issue.status == 'open' %}
+                        {% if issue.status == '진행중' %}
                         <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-bold">진행중</span>
-                        {% elif issue.status == 'resolved' %}
-                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-bold">해결됨</span>
-                        {% elif issue.status == 'closed' %}
+                        {% elif issue.status == '종료' %}
                         <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm font-bold">종료</span>
+                        {% else %}
+                        <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm font-bold">{{ issue.status }}</span>
                         {% endif %}
                     </div>
                     <div>

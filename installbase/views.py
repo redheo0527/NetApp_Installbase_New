@@ -1388,7 +1388,7 @@ def issue_complete(request, pk):
         end_date = request.POST.get('end_date')
         if end_date:
             issue.end_date = end_date
-            issue.status = 'closed'
+            issue.status = '종료'
         issue.save()
         return redirect('issue_list')
 
@@ -2063,8 +2063,8 @@ def get_cases_ajax(request):
     page = int(request.GET.get('page', 1))
     per_page = 20  # 페이지당 항목 수
     
-    # 진행중인 케이스만 필터링 (closed가 아닌 것들)
-    base_queryset = Issue.objects.filter(deleted_at__isnull=True).exclude(status='closed').select_related(
+    # 진행중인 케이스만 필터링 (종료가 아닌 것들)
+    base_queryset = Issue.objects.filter(deleted_at__isnull=True).exclude(status='종료').select_related(
         'target_cluster', 'target_node'
     )
     
