@@ -237,6 +237,9 @@
                                 {% elif rma.return_status == 'not_returned' %}
                                 <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-lg text-[10px] font-bold whitespace-nowrap">반납 필요</span>
                                 <span class="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-lg text-[10px] font-bold whitespace-nowrap">미반납</span>
+                                {% if rma.delivery_region %}
+                                <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-semibold whitespace-nowrap">배송지역: {{ rma.delivery_region }}</span>
+                                {% endif %}
                                 {% else %}
                                 <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-lg text-[10px] font-bold whitespace-nowrap">반납 필요</span>
                                 {% endif %}
