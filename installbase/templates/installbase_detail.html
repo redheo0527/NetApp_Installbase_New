@@ -541,11 +541,11 @@
             </div>
 
             <div class="overflow-hidden rounded-2xl border border-gray-50">
-                <table class="w-full text-left table-fixed">
+                <table class="w-full text-left">
                     <thead class="bg-gray-50 text-gray-400 uppercase text-[10px] font-black tracking-widest">
                         <tr>
                             <th class="py-4 px-6 w-40">증설 날짜</th>
-                            <th class="py-4 px-6" style="width: auto; white-space: nowrap;">노드</th>
+                            <th class="py-4 px-6" style="width: 1%; white-space: nowrap;">노드</th>
                             <th class="py-4 px-6">증설 상세 내용</th>
                             <th class="py-4 px-6 w-24 text-right">관리</th>
                         </tr>
@@ -554,7 +554,7 @@
                         {% for exp in expansions %}
                         <tr class="history-row group hover:bg-gray-50/50 transition" id="exp-row-{{ exp.id }}">
                             <td class="py-4 px-6 font-bold text-gray-600 exp-date-cell align-top">{{ exp.expansion_date|date:"Y-m-d" }}</td>
-                            <td class="py-4 px-6 text-gray-700 align-top" style="width: auto; white-space: nowrap;">
+                            <td class="py-4 px-6 text-gray-700 align-top" style="width: 1%; white-space: nowrap;">
                                 <div class="flex flex-col gap-1">
                                     {% if exp.install_base.node_name_1 %}
                                     <span class="text-xs font-semibold whitespace-nowrap">{{ exp.install_base.node_name_1 }}</span>
