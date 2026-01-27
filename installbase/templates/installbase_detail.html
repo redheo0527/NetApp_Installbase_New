@@ -1151,6 +1151,7 @@
             
             // 원본 값으로 복원
             dateCell.innerHTML = originalDate;
+            descCell.className = 'py-4 px-6 text-gray-700 exp-desc-cell pre-wrap align-top break-words';
             descCell.innerHTML = originalDesc.replace(/\n/g, '<br>');
             actionCell.innerHTML = `<button onclick="enableEdit('${id}')" class="text-blue-500 font-bold text-xs uppercase">Edit</button>`;
             
@@ -1180,11 +1181,11 @@
                     const descCell = row.querySelector('.exp-desc-cell');
                     const actionCell = row.querySelector('td:last-child');
                     
-                    // 날짜 포맷팅
-                    const dateObj = new Date(newDate);
-                    const formattedDate = dateObj.toISOString().split('T')[0];
+                    // 날짜 포맷팅 (Y-m-d 형식 유지)
+                    const formattedDate = newDate;
                     
                     dateCell.innerHTML = formattedDate;
+                    descCell.className = 'py-4 px-6 text-gray-700 exp-desc-cell pre-wrap align-top break-words';
                     descCell.innerHTML = newDesc.replace(/\n/g, '<br>');
                     actionCell.innerHTML = `<button onclick="enableEdit('${id}')" class="text-blue-500 font-bold text-xs uppercase">Edit</button>`;
                     
