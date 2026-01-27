@@ -528,8 +528,15 @@
                         <select id="expNodeId" class="p-3 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
                             {% for node in all_cluster_nodes %}
                             <option value="{{ node.pk }}" {% if node.pk == installbase.pk %}selected{% endif %}>
-                                {% if node.node_number_1 %}노드{{ node.node_number_1 }}{% elif node.node_number_2 %}노드{{ node.node_number_2 }}{% else %}노드{{ forloop.counter }}{% endif %}
-                                {% if node.node_name_1 %} - {{ node.node_name_1 }}{% elif node.node_name_2 %} - {{ node.node_name_2 }}{% endif %}
+                                {% if node.node_name_1 and node.node_name_2 %}
+                                    {{ node.node_name_1 }} / {{ node.node_name_2 }}
+                                {% elif node.node_name_1 %}
+                                    {{ node.node_name_1 }}
+                                {% elif node.node_name_2 %}
+                                    {{ node.node_name_2 }}
+                                {% else %}
+                                    {% if node.node_number_1 %}노드{{ node.node_number_1 }}{% elif node.node_number_2 %}노드{{ node.node_number_2 }}{% else %}노드{{ forloop.counter }}{% endif %}
+                                {% endif %}
                             </option>
                             {% endfor %}
                         </select>
