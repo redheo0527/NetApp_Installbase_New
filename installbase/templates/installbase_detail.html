@@ -522,7 +522,7 @@
             <div id="expansionForm" class="hidden mb-8 p-6 bg-slate-50 rounded-3xl border border-slate-100">
                 <div class="space-y-4">
                     <div class="flex flex-col w-48"><label class="label-text">증설 날짜</label><input type="date" id="expDate" class="p-3 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"></div>
-                    {% if all_cluster_nodes and all_cluster_nodes|length > 1 %}
+                    {% if is_multi_node %}
                     <div class="flex flex-col">
                         <label class="label-text">노드 선택</label>
                         <select id="expNodeId" class="p-3 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
@@ -1116,6 +1116,10 @@
                 body: bodyParams
             }).then(res => res.json()).then(data => { if(data.status === 'success') location.reload(); });
         };
+        let editingExpansionId = null;
+        let originalDate = '';
+        let originalDesc = '';
+        
         window.enableEdit = function(id) {
             const row = document.getElementById(`exp-row-${id}`);
             const dateCell = row.querySelector('.exp-date-cell');
@@ -1123,18 +1127,77 @@
             const actionCell = row.querySelector('td:last-child');
             const oldDate = dateCell.innerText.trim();
             const oldDesc = descCell.innerText.trim();
+            
+            // 원본 값 저장
+            editingExpansionId = id;
+            originalDate = oldDate;
+            originalDesc = oldDesc;
+            
             dateCell.innerHTML = `<input type="date" id="edit-date-${id}" value="${oldDate}" class="w-full p-2 text-xs border rounded-lg">`;
             descCell.innerHTML = `<textarea id="edit-desc-${id}" rows="3" class="w-full p-2 text-xs border rounded-lg resize-none">${oldDesc}</textarea>`;
-            actionCell.innerHTML = `<button onclick="saveEdit('${id}')" class="text-green-600 font-bold text-xs uppercase">Save</button>`;
+            actionCell.innerHTML = `
+                <div class="flex gap-2 justify-end">
+                    <button onclick="cancelEdit('${id}')" class="text-gray-500 font-bold text-xs uppercase hover:text-gray-700">취소</button>
+                    <button onclick="saveEdit('${id}')" class="text-green-600 font-bold text-xs uppercase hover:text-green-700">Save</button>
+                </div>
+            `;
         };
+        
+        window.cancelEdit = function(id) {
+            const row = document.getElementById(`exp-row-${id}`);
+            const dateCell = row.querySelector('.exp-date-cell');
+            const descCell = row.querySelector('.exp-desc-cell');
+            const actionCell = row.querySelector('td:last-child');
+            
+            // 원본 값으로 복원
+            dateCell.innerHTML = originalDate;
+            descCell.innerHTML = originalDesc.replace(/\n/g, '<br>');
+            actionCell.innerHTML = `<button onclick="enableEdit('${id}')" class="text-blue-500 font-bold text-xs uppercase">Edit</button>`;
+            
+            editingExpansionId = null;
+            originalDate = '';
+            originalDesc = '';
+        };
+        
         window.saveEdit = function(id) {
             const newDate = document.getElementById(`edit-date-${id}`).value;
             const newDesc = document.getElementById(`edit-desc-${id}`).value;
+            
+            if (!newDate || !newDesc) {
+                alert('날짜와 내용을 모두 입력해주세요.');
+                return;
+            }
+            
             fetch(`/ajax/edit-expansion/${id}/`, {
                 method: "POST",
                 headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/x-www-form-urlencoded" },
                 body: `date=${encodeURIComponent(newDate)}&description=${encodeURIComponent(newDesc)}`
-            }).then(res => res.json()).then(data => { if(data.status === 'success') location.reload(); });
+            }).then(res => res.json()).then(data => {
+                if(data.status === 'success') {
+                    // 페이지 새로고침 대신 DOM 직접 업데이트
+                    const row = document.getElementById(`exp-row-${id}`);
+                    const dateCell = row.querySelector('.exp-date-cell');
+                    const descCell = row.querySelector('.exp-desc-cell');
+                    const actionCell = row.querySelector('td:last-child');
+                    
+                    // 날짜 포맷팅
+                    const dateObj = new Date(newDate);
+                    const formattedDate = dateObj.toISOString().split('T')[0];
+                    
+                    dateCell.innerHTML = formattedDate;
+                    descCell.innerHTML = newDesc.replace(/\n/g, '<br>');
+                    actionCell.innerHTML = `<button onclick="enableEdit('${id}')" class="text-blue-500 font-bold text-xs uppercase">Edit</button>`;
+                    
+                    editingExpansionId = null;
+                    originalDate = '';
+                    originalDesc = '';
+                } else {
+                    alert('저장에 실패했습니다. 다시 시도해주세요.');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('저장 중 오류가 발생했습니다.');
+            });
         };
     });
 </script>
