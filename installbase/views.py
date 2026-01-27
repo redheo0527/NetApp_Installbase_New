@@ -377,9 +377,11 @@ def installbase_detail(request, pk):
     # 멀티노드 여부 판단 (4노드 이상 = 2개 이상의 InstallBase 레코드)
     # QuerySet인 경우 count() 사용 (더 효율적)
     if isinstance(all_cluster_nodes, list):
-        is_multi_node = len(all_cluster_nodes) >= 2
+        cluster_node_count = len(all_cluster_nodes)
+        is_multi_node = cluster_node_count >= 2
     else:
-        is_multi_node = all_cluster_nodes.count() >= 2
+        cluster_node_count = all_cluster_nodes.count()
+        is_multi_node = cluster_node_count >= 2
     
     # 증설 이력 가져오기 (최적화: select_related 사용)
     if is_multi_node and installbase.cluster_name:
@@ -492,6 +494,7 @@ def installbase_detail(request, pk):
         'cluster_members': cluster_members,  # 다른 노드들 (기존 호환성)
         'all_cluster_nodes': all_cluster_nodes,  # 모든 노드 (현재 노드 포함)
         'is_multi_node': is_multi_node,
+        'cluster_node_count': cluster_node_count,  # 클러스터 노드 개수
         'total_node_count': total_node_count,  # 총 노드 수
         'nodes_data_json': json.dumps(nodes_data),  # JSON 데이터
     }
