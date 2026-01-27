@@ -522,7 +522,8 @@
             <div id="expansionForm" class="hidden mb-8 p-6 bg-slate-50 rounded-3xl border border-slate-100">
                 <div class="space-y-4">
                     <div class="flex flex-col w-48"><label class="label-text">증설 날짜</label><input type="date" id="expDate" class="p-3 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"></div>
-                    {% if is_multi_node %}
+                    {% if installbase.cluster_name %}
+                    {% if is_multi_node or all_cluster_nodes|length > 1 %}
                     <div class="flex flex-col">
                         <label class="label-text">노드 선택</label>
                         <select id="expNodeId" class="p-3 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
@@ -534,6 +535,7 @@
                             {% endfor %}
                         </select>
                     </div>
+                    {% endif %}
                     {% endif %}
                     <div class="flex flex-col"><label class="label-text">증설 상세 내용</label><textarea id="expDesc" rows="3" class="w-full p-4 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea></div>
                     <div class="flex justify-end gap-3"><button onclick="toggleExpansionForm()" class="px-6 py-2.5 bg-gray-200 text-gray-600 rounded-xl font-bold text-sm">취소</button><button onclick="submitExpansion()" class="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm">저장</button></div>
@@ -1136,9 +1138,9 @@
             dateCell.innerHTML = `<input type="date" id="edit-date-${id}" value="${oldDate}" class="w-full p-2 text-xs border rounded-lg">`;
             descCell.innerHTML = `<textarea id="edit-desc-${id}" rows="3" class="w-full p-2 text-xs border rounded-lg resize-none">${oldDesc}</textarea>`;
             actionCell.innerHTML = `
-                <div class="flex gap-2 justify-end">
-                    <button onclick="cancelEdit('${id}')" class="text-gray-500 font-bold text-xs uppercase hover:text-gray-700">취소</button>
+                <div class="flex flex-col gap-1 items-end">
                     <button onclick="saveEdit('${id}')" class="text-green-600 font-bold text-xs uppercase hover:text-green-700">Save</button>
+                    <button onclick="cancelEdit('${id}')" class="text-gray-500 font-bold text-xs uppercase hover:text-gray-700">취소</button>
                 </div>
             `;
         };
