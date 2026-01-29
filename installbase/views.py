@@ -1516,6 +1516,19 @@ def rma_list(request):
                 complete.append(rma)
         # 각 그룹 내에서 최근 일자 순 유지 (이미 정렬되어 있음)
         rmas_list = incomplete + complete
+        
+        # 연속된 같은 클러스터 이름 중복 제거
+        prev_cluster_name = None
+        for rma in rmas_list:
+            current_cluster_name = None
+            if rma.case_number and rma.case_number.target_cluster:
+                current_cluster_name = rma.case_number.target_cluster.cluster_name
+            if current_cluster_name and current_cluster_name == prev_cluster_name:
+                setattr(rma, 'show_cluster_name', False)
+            else:
+                setattr(rma, 'show_cluster_name', True)
+            prev_cluster_name = current_cluster_name
+        
         # QuerySet으로 다시 변환할 수 없으므로 리스트로 처리
         from django.core.paginator import Paginator as ListPaginator
         paginator = ListPaginator(rmas_list, 10)
