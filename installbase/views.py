@@ -364,39 +364,37 @@ def installbase_detail(request, pk):
     if installbase.cluster_name:
         # cluster_name 정규화 (공백 제거)
         normalized_cluster_name = installbase.cluster_name.strip()
-        # DB에서 정렬하도록 최적화 (Python 정렬보다 빠름)
+        
+        # 먼저 넓은 범위로 가져온 후 Python 레벨에서 정규화하여 필터링
+        # cluster_name이 비슷한 것들을 모두 가져오기 (icontains 사용)
         from django.db.models import Case, When, IntegerField
-        # cluster_name이 정규화된 값과 일치하거나 공백 차이로 인해 다른 경우를 모두 포함
-        all_cluster_nodes = InstallBase.objects.filter(
-            deleted_at__isnull=True
-        ).filter(
-            Q(cluster_name=normalized_cluster_name) | 
-            Q(cluster_name=installbase.cluster_name)
+        candidate_nodes = InstallBase.objects.filter(
+            deleted_at__isnull=True,
+            cluster_name__icontains=normalized_cluster_name
         ).select_related(
             'product', 'customer', 'cluster_switch', 
             'cluster_switch__switch_model_1', 'cluster_switch__switch_model_2',
             'fabric_pool_switch', 'fabric_pool_switch__switch_model_1', 'fabric_pool_switch__switch_model_2'
-        ).prefetch_related('assigned_engineers', 'assigned_engineers__profile').annotate(
-            # node_number_1이 None인 경우 999로 처리하여 뒤로 보냄
-            sort_node_1=Case(
-                When(node_number_1__isnull=True, then=999),
-                default='node_number_1',
-                output_field=IntegerField()
-            ),
-            sort_node_2=Case(
-                When(node_number_2__isnull=True, then=999),
-                default='node_number_2',
-                output_field=IntegerField()
-            )
-        ).order_by('sort_node_1', 'sort_node_2', 'id')
+        ).prefetch_related('assigned_engineers', 'assigned_engineers__profile')
         
-        # Python 레벨에서 cluster_name 정규화 후 다시 필터링 (정확한 그룹화)
-        normalized_nodes = []
-        for node in all_cluster_nodes:
+        # Python 레벨에서 cluster_name 정규화 후 정확히 일치하는 것만 필터링
+        all_cluster_nodes = []
+        for node in candidate_nodes:
             node_normalized = (node.cluster_name or '').strip() if node.cluster_name else ''
             if node_normalized == normalized_cluster_name:
-                normalized_nodes.append(node)
-        all_cluster_nodes = normalized_nodes if normalized_nodes else [installbase]
+                all_cluster_nodes.append(node)
+        
+        # 정규화된 노드가 없으면 현재 노드만 사용
+        if not all_cluster_nodes:
+            all_cluster_nodes = [installbase]
+        else:
+            # node_number로 정렬
+            from django.db.models import Case, When, IntegerField
+            all_cluster_nodes.sort(key=lambda x: (
+                x.node_number_1 if x.node_number_1 is not None else 999,
+                x.node_number_2 if x.node_number_2 is not None else 999,
+                x.id
+            ))
     else:
         # cluster_name이 없는 경우 현재 노드만
         all_cluster_nodes = [installbase]
