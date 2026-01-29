@@ -86,51 +86,61 @@ def installbase_list(request):
     # cluster_name별로 그룹화하여 첫 번째 노드만 가져오기
     # 성능 최적화: 한 번의 쿼리로 모든 데이터 가져오기
     
-    # cluster_name별로 그룹화 (cluster_name 정규화 포함)
-    # 각 cluster_name의 첫 번째 노드 ID 가져오기 (최적화된 쿼리)
-    # cluster_name이 None이거나 빈 문자열인 경우도 별도로 처리
-    first_node_ids = list(filtered_queryset.values('cluster_name').annotate(
-        first_id=Min('id')
-    ).values_list('first_id', flat=True))
+    # cluster_name별로 그룹화하여 첫 번째 노드만 가져오기
+    # Python 레벨에서 cluster_name 정규화 후 그룹화
+    all_nodes = list(filtered_queryset.select_related('customer', 'product'))
     
-    # 첫 번째 노드들만 한 번에 가져오기
+    # cluster_name 정규화 및 그룹화
+    cluster_groups = defaultdict(list)
+    for node in all_nodes:
+        # cluster_name 정규화 (공백 제거, None 처리, 대소문자 통일)
+        cluster_name = (node.cluster_name or '').strip() if node.cluster_name else ''
+        cluster_groups[cluster_name].append(node)
+    
+    # 각 클러스터의 첫 번째 노드 선택 및 집계 데이터 계산
+    cluster_data = {}
+    first_node_ids = []
+    
+    for cluster_name, nodes in cluster_groups.items():
+        # 첫 번째 노드 선택 (ID가 가장 작은 것)
+        first_node = min(nodes, key=lambda x: x.id)
+        first_node_ids.append(first_node.id)
+        
+        # 집계 데이터 계산
+        model_names = set()
+        serial_numbers = set()
+        device_count = len(nodes)
+        
+        for node in nodes:
+            if node.product and node.product.model_name:
+                model_names.add(node.product.model_name)
+            if node.serial_number_1 and node.serial_number_1.strip():
+                serial_numbers.add(node.serial_number_1.strip())
+            if node.serial_number_2 and node.serial_number_2.strip():
+                serial_numbers.add(node.serial_number_2.strip())
+        
+        cluster_data[cluster_name] = {
+            'first_node': first_node,
+            'model_names': sorted(list(model_names)),
+            'serial_numbers': sorted(list(serial_numbers)),
+            'device_count': device_count
+        }
+    
+    # 첫 번째 노드들만 가져오기
     first_nodes = filtered_queryset.filter(id__in=first_node_ids).select_related('customer', 'product')
-    
-    # 각 cluster_name의 모든 노드 데이터를 한 번에 가져오기 (집계용)
-    cluster_data = defaultdict(lambda: {
-        'model_names': set(),
-        'serial_numbers': set(),
-        'device_count': 0
-    })
-    
-    # 모든 노드의 필요한 데이터만 한 번에 가져오기
-    all_cluster_data = filtered_queryset.values('cluster_name', 'product__model_name', 'serial_number_1', 'serial_number_2')
-    
-    for item in all_cluster_data:
-        # cluster_name 정규화 (공백 제거, None 처리)
-        cluster_name = (item['cluster_name'] or '').strip() if item['cluster_name'] else ''
-        cluster_data[cluster_name]['device_count'] += 1
-        if item['product__model_name']:
-            cluster_data[cluster_name]['model_names'].add(item['product__model_name'])
-        if item['serial_number_1'] and item['serial_number_1'].strip():
-            cluster_data[cluster_name]['serial_numbers'].add(item['serial_number_1'])
-        if item['serial_number_2'] and item['serial_number_2'].strip():
-            cluster_data[cluster_name]['serial_numbers'].add(item['serial_number_2'])
     
     # 첫 번째 노드에 집계 데이터 추가
     object_list = []
     for node in first_nodes:
         # cluster_name 정규화 (공백 제거, None 처리)
         cluster_name = (node.cluster_name or '').strip() if node.cluster_name else ''
-        data = cluster_data.get(cluster_name, {'model_names': set(), 'serial_numbers': set(), 'device_count': 0})
+        data = cluster_data.get(cluster_name, {'model_names': [], 'serial_numbers': [], 'device_count': 0})
         node_count = data['device_count'] * 2
-        model_names = sorted(list(data['model_names']))
-        serial_numbers = sorted(list(data['serial_numbers']))
         
         setattr(node, 'cluster_node_count', node_count)
         setattr(node, 'is_multi_node', node_count >= 4)
-        setattr(node, 'cluster_model_names', model_names)
-        setattr(node, 'cluster_serial_numbers', serial_numbers)
+        setattr(node, 'cluster_model_names', data['model_names'])
+        setattr(node, 'cluster_serial_numbers', data['serial_numbers'])
         object_list.append(node)
 
     # 정렬 파라미터 처리
