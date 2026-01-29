@@ -86,10 +86,12 @@ def installbase_list(request):
     # cluster_name별로 그룹화하여 첫 번째 노드만 가져오기
     # 성능 최적화: 한 번의 쿼리로 모든 데이터 가져오기
     
+    # cluster_name별로 그룹화 (cluster_name 정규화 포함)
     # 각 cluster_name의 첫 번째 노드 ID 가져오기 (최적화된 쿼리)
-    first_node_ids = filtered_queryset.values('cluster_name').annotate(
+    # cluster_name이 None이거나 빈 문자열인 경우도 별도로 처리
+    first_node_ids = list(filtered_queryset.values('cluster_name').annotate(
         first_id=Min('id')
-    ).values_list('first_id', flat=True)
+    ).values_list('first_id', flat=True))
     
     # 첫 번째 노드들만 한 번에 가져오기
     first_nodes = filtered_queryset.filter(id__in=first_node_ids).select_related('customer', 'product')
@@ -105,7 +107,8 @@ def installbase_list(request):
     all_cluster_data = filtered_queryset.values('cluster_name', 'product__model_name', 'serial_number_1', 'serial_number_2')
     
     for item in all_cluster_data:
-        cluster_name = item['cluster_name']
+        # cluster_name 정규화 (공백 제거, None 처리)
+        cluster_name = (item['cluster_name'] or '').strip() if item['cluster_name'] else ''
         cluster_data[cluster_name]['device_count'] += 1
         if item['product__model_name']:
             cluster_data[cluster_name]['model_names'].add(item['product__model_name'])
@@ -117,7 +120,8 @@ def installbase_list(request):
     # 첫 번째 노드에 집계 데이터 추가
     object_list = []
     for node in first_nodes:
-        cluster_name = node.cluster_name
+        # cluster_name 정규화 (공백 제거, None 처리)
+        cluster_name = (node.cluster_name or '').strip() if node.cluster_name else ''
         data = cluster_data.get(cluster_name, {'model_names': set(), 'serial_numbers': set(), 'device_count': 0})
         node_count = data['device_count'] * 2
         model_names = sorted(list(data['model_names']))
