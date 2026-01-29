@@ -362,11 +362,16 @@ def installbase_detail(request, pk):
     # 같은 cluster_name을 가진 모든 노드들 가져오기 (삭제되지 않은 것만)
     # cluster_name이 빈 문자열이거나 None인 경우를 처리
     if installbase.cluster_name:
+        # cluster_name 정규화 (공백 제거)
+        normalized_cluster_name = installbase.cluster_name.strip()
         # DB에서 정렬하도록 최적화 (Python 정렬보다 빠름)
         from django.db.models import Case, When, IntegerField
+        # cluster_name이 정규화된 값과 일치하거나 공백 차이로 인해 다른 경우를 모두 포함
         all_cluster_nodes = InstallBase.objects.filter(
-            cluster_name=installbase.cluster_name,
             deleted_at__isnull=True
+        ).filter(
+            Q(cluster_name=normalized_cluster_name) | 
+            Q(cluster_name=installbase.cluster_name)
         ).select_related(
             'product', 'customer', 'cluster_switch', 
             'cluster_switch__switch_model_1', 'cluster_switch__switch_model_2',
@@ -384,6 +389,14 @@ def installbase_detail(request, pk):
                 output_field=IntegerField()
             )
         ).order_by('sort_node_1', 'sort_node_2', 'id')
+        
+        # Python 레벨에서 cluster_name 정규화 후 다시 필터링 (정확한 그룹화)
+        normalized_nodes = []
+        for node in all_cluster_nodes:
+            node_normalized = (node.cluster_name or '').strip() if node.cluster_name else ''
+            if node_normalized == normalized_cluster_name:
+                normalized_nodes.append(node)
+        all_cluster_nodes = normalized_nodes if normalized_nodes else [installbase]
     else:
         # cluster_name이 없는 경우 현재 노드만
         all_cluster_nodes = [installbase]
