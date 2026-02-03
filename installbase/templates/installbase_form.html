@@ -797,15 +797,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 제품 변경 시 실시간 미리보기 업데이트
-    const productSelect = document.querySelector('select[name="product"]');
+    const productSelect = document.querySelector('select[name="product"]') || document.getElementById('id_product');
     if (productSelect) {
         productSelect.addEventListener('change', function() {
+            console.log('Product changed:', this.value);
             updatePreview(this, 'product-image-preview', 'product');
         });
         // 초기 로드 시 제품 이미지 표시
         if (productSelect.value) {
             updatePreview(productSelect, 'product-image-preview', 'product');
         }
+        // 추가: input 이벤트도 감지 (일부 브라우저 호환성)
+        productSelect.addEventListener('input', function() {
+            updatePreview(this, 'product-image-preview', 'product');
+        });
+    } else {
+        console.error('Product select element not found');
     }
 });
 
