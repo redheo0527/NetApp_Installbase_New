@@ -51,6 +51,10 @@
             <a href="{% url 'installbase_list' %}" class="px-6 py-3 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition text-sm">목록으로</a>
             {% if not is_multi_node %}
             <a href="{% url 'installbase_update' installbase.pk %}" class="px-6 py-3 bg-[#0067B3] text-white rounded-2xl font-bold shadow-lg shadow-blue-100 hover:translate-y-[-2px] transition text-sm text-center">정보 수정</a>
+            <form method="POST" action="{% url 'installbase_delete' installbase.pk %}" class="inline" onsubmit="return confirm('정말로 이 장비를 삭제하시겠습니까?');">
+                {% csrf_token %}
+                <button type="submit" class="px-6 py-3 bg-red-500 text-white rounded-2xl font-bold shadow-lg shadow-red-100 hover:translate-y-[-2px] transition text-sm text-center hover:bg-red-600">장비 삭제</button>
+            </form>
             {% endif %}
         </div>
     </div>
@@ -77,7 +81,7 @@
                     <div class="node-item bg-white rounded-xl p-4 border-2 cursor-pointer transition-all relative group {% if node.pk == installbase.pk %}border-blue-500 bg-blue-50{% else %}border-gray-200 hover:border-blue-300{% endif %}" 
                          data-node-pk="{{ node.pk }}" 
                          onclick="selectNode({{ node.pk }})">
-                        <div class="absolute top-2 right-2 flex items-center gap-1 z-10" onclick="event.stopPropagation();">
+                        <div class="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10" onclick="event.stopPropagation();">
                             <a href="/installbase/{{ node.pk }}/update/" 
                                class="inline-flex items-center justify-center w-7 h-7 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all shadow-sm text-xs"
                                title="수정">
@@ -91,7 +95,7 @@
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
                             </form>
-                        </div>
+                                    </div>
                         <div class="space-y-2">
                             <div class="flex flex-col gap-1">
                             <div class="flex flex-col gap-1">
