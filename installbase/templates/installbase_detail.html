@@ -879,6 +879,27 @@
         </div>
             
             <div class="info-card">
+                <h4 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-microchip text-cyan-500"></i> Technical Specifications
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div>
+                        <p class="label-text">Install Country</p>
+                        <p class="value-text flex items-center gap-2">
+                            <span class="inline-block w-5 h-3 overflow-hidden rounded-sm bg-gray-50"></span>
+                            ${node.country_display || '-'}
+                        </p>
+                    </div>
+                    <div><p class="label-text">Location / Rack</p><p class="value-text">${node.location || '-'} / ${node.rack_space || '-'}</p></div>
+                    <div><p class="label-text">Shelf Models</p><p class="value-text">${node.shelf_models || '-'}</p></div>
+                    <div class="md:col-span-3 pt-6 border-t border-gray-50">
+                        <p class="label-text">Disk Configuration</p>
+                        <p class="value-text text-sm leading-relaxed">${(node.disk_info || '-').replace(/\n/g, '<br>')}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-card">
                 <div class="flex justify-between items-start mb-8">
                     <div class="flex items-center gap-3">
                         <span class="w-10 h-10 bg-gray-100 text-gray-500 rounded-xl flex items-center justify-center">
