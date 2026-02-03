@@ -50,11 +50,18 @@
         <div class="flex gap-3 animate-slide-up">
             <a href="{% url 'installbase_list' %}" class="px-6 py-3 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition text-sm">목록으로</a>
             {% if not is_multi_node %}
+            {% if installbase.deleted_at %}
+            <form method="POST" action="{% url 'installbase_restore' installbase.pk %}" class="inline" onsubmit="return confirm('이 장비의 삭제를 취소하시겠습니까?');">
+                {% csrf_token %}
+                <button type="submit" class="px-6 py-3 bg-green-500 text-white rounded-2xl font-bold shadow-lg shadow-green-100 hover:translate-y-[-2px] transition text-sm text-center hover:bg-green-600">삭제 취소</button>
+            </form>
+            {% else %}
             <a href="{% url 'installbase_update' installbase.pk %}" class="px-6 py-3 bg-[#0067B3] text-white rounded-2xl font-bold shadow-lg shadow-blue-100 hover:translate-y-[-2px] transition text-sm text-center">정보 수정</a>
             <form method="POST" action="{% url 'installbase_delete' installbase.pk %}" class="inline" onsubmit="return confirm('정말로 이 장비를 삭제하시겠습니까?');">
                 {% csrf_token %}
                 <button type="submit" class="px-6 py-3 bg-red-500 text-white rounded-2xl font-bold shadow-lg shadow-red-100 hover:translate-y-[-2px] transition text-sm text-center hover:bg-red-600">장비 삭제</button>
             </form>
+            {% endif %}
             {% endif %}
         </div>
     </div>
