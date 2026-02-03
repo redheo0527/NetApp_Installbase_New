@@ -299,15 +299,15 @@
         
         if (returnRequired && returnRequired.value === 'not_required') {
             if (returnStatus) {
-                // hidden input으로 값 전송 (disabled된 경우 대비)
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = 'return_status';
-                hiddenInput.value = 'not_required';
-                document.getElementById('rmaForm').appendChild(hiddenInput);
-                
+                // return_status를 'not_required'로 설정하고 disabled 해제
                 returnStatus.value = 'not_required';
-                returnStatus.disabled = false; // disabled 해제하여 값이 전송되도록
+                returnStatus.disabled = false;
+                
+                // 기존 hidden input 제거 (중복 방지)
+                const existingHidden = document.querySelector('input[name="return_status"][type="hidden"]');
+                if (existingHidden) {
+                    existingHidden.remove();
+                }
             }
         }
         

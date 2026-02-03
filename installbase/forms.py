@@ -38,6 +38,16 @@ class RMAForm(forms.ModelForm):
             self.fields['case_number'].initial = case_number_id
         # return_required를 optional로 설정
         self.fields['return_required'].required = False
+        # return_status도 optional로 설정 (return_required가 not_required일 때 자동 설정)
+        self.fields['return_status'].required = False
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        # return_required가 'not_required'이면 return_status도 'not_required'로 설정
+        return_required = cleaned_data.get('return_required')
+        if return_required == 'not_required':
+            cleaned_data['return_status'] = 'not_required'
+        return cleaned_data
     
     class Meta:
         model = RMA
