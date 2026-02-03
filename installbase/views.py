@@ -1718,6 +1718,11 @@ def rma_update(request, pk):
             # disabled 필드는 POST에 포함되지 않으므로 원래 값으로 복원
             obj = form.save(commit=False)
             obj.case_number = rma.case_number
+            
+            # return_required가 'not_required'이면 return_status도 'not_required'로 설정
+            if obj.return_required == 'not_required':
+                obj.return_status = 'not_required'
+            
             obj.save()
             return redirect('rma_list')
         else:
