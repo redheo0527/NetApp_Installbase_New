@@ -452,6 +452,7 @@ def installbase_detail(request, pk):
                 'product_image_url': product_image_url,
                 'ontap_version': node.ontap_version or '',
                 'license_type': node.license_type or '',
+                'service_name': node.service_name or '',
                 'service_level': node.service_level or '',
                 'service_level_display': node.get_service_level_display(),
                 'periodic_inspection': node.periodic_inspection or '',

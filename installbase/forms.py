@@ -1,10 +1,17 @@
 from django import forms
+from django.forms import DateInput
 from .models import InstallBase, ClusterSwitch, SwitchModel, Issue, RMA, Part
 
 class InstallBaseForm(forms.ModelForm):
     class Meta:
         model = InstallBase
         fields = '__all__'
+        widgets = {
+            'install_date': DateInput(attrs={'type': 'date'}),
+            'contract_end_date': DateInput(attrs={'type': 'date'}),
+            'maintenance_start': DateInput(attrs={'type': 'date'}),
+            'maintenance_end': DateInput(attrs={'type': 'date'}),
+        }
 
 class ClusterSwitchForm(forms.ModelForm):
     class Meta:

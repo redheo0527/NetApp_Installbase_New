@@ -174,6 +174,10 @@
                             <p class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 uppercase italic">{{ installbase.license_type|default:"BASE" }}</p>
                         </div>
                         <div>
+                            <p class="label-text">Service Name</p>
+                            <p class="value-text">{{ installbase.service_name|default:"-" }}</p>
+                        </div>
+                        <div>
                             <p class="label-text">Periodic Inspection</p>
                             <p class="value-text flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500"></span>{{ installbase.get_periodic_inspection_display }}</p>
                         </div>
@@ -722,28 +726,32 @@
                         <div>
                             <p class="label-text">ONTAP Version</p>
                             <p class="text-2xl font-black text-gray-800">v${node.ontap_version || '-'}</p>
-        </div>
+                        </div>
                         <div>
                             <p class="label-text">License Type</p>
                             <p class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 uppercase italic">${node.license_type || 'BASE'}</p>
-        </div>
+                        </div>
+                        <div>
+                            <p class="label-text">Service Name</p>
+                            <p class="value-text">${node.service_name || '-'}</p>
+                        </div>
                         <div>
                             <p class="label-text">Service Level</p>
                             <p class="value-text font-bold text-blue-600 flex items-center">${node.service_level_display || '-'} ${serviceLevelStar}</p>
-    </div>
+                        </div>
                         <div>
                             <p class="label-text">Periodic Inspection</p>
                             <p class="value-text flex items-center gap-2">${periodicDot}${node.periodic_inspection_display || '-'}</p>
-</div>
-            </div>
+                        </div>
+                    </div>
                     ${node.project ? `
                     <div>
                         <p class="label-text">Project Name</p>
                         <p class="value-text break-words" style="word-break: break-word; overflow-wrap: break-word;">${node.project}</p>
-        </div>
+                    </div>
                     ` : ''}
-    </div>
-</div>
+                </div>
+            </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="info-card border-l-4 border-l-gray-800">
@@ -1144,7 +1152,8 @@
         {% endif %}
         
         window.submitExpansion = function() {
-            const date = document.getElementById('expDate').value;
+            const dateRaw = document.getElementById('expDate').value;
+            const date = dateRaw ? dateRaw.slice(0, 10) : '';
             const description = document.getElementById('expDesc').value;
             if (!date || !description) return;
             const nodeId = document.getElementById('expNodeId') ? document.getElementById('expNodeId').value : null;
@@ -1200,7 +1209,8 @@
         };
         
         window.saveEdit = function(id) {
-            const newDate = document.getElementById(`edit-date-${id}`).value;
+            const newDateRaw = document.getElementById(`edit-date-${id}`).value;
+            const newDate = newDateRaw ? newDateRaw.slice(0, 10) : '';
             const newDesc = document.getElementById(`edit-desc-${id}`).value;
             
             if (!newDate || !newDesc) {
