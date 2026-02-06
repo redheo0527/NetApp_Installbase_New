@@ -4,100 +4,360 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NetApp IB Manager</title>
+    <link rel="icon" type="image/png" href="/media/873186.png">
+    <link rel="shortcut icon" type="image/png" href="/media/873186.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --netapp-blue: #0067B3;
-            --netapp-cyan: #00DDF4;
-            --bg-light: #F8FAFC;
+            --netapp-blue: #0067b1;
+            --netapp-dark: #002d5a;
+            --neon-blue: #00d2ff;
         }
         body { 
-            background-color: var(--bg-light); 
-            font-family: 'Inter', sans-serif; 
-            letter-spacing: -0.02em;
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            letter-spacing: -0.03em;
+            background: #f0f4f9;
+        }
+        /* 추상적 배경 패턴 */
+        .bg-pattern {
+            background-color: #f0f4f9;
+            background-image: radial-gradient(at 0% 0%, rgba(0, 103, 177, 0.05) 0px, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(0, 210, 255, 0.05) 0px, transparent 50%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.03);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 15px 45px 0 rgba(0, 103, 177, 0.1);
+            border-color: var(--neon-blue);
+        }
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
+        }
+        .sidebar-gradient {
+            background: linear-gradient(180deg, #002d5a 0%, #001a35 100%) !important;
+        }
+        aside {
+            background: linear-gradient(180deg, #002d5a 0%, #001a35 100%) !important;
         }
         .nav-active {
-            background-color: var(--netapp-blue);
-            color: white !important;
-            box-shadow: 0 10px 15px -3px rgba(0, 103, 179, 0.2);
+            background-color: rgba(0, 103, 177, 0.2) !important;
+            color: #00d2ff !important;
+            border: 1px solid rgba(0, 210, 255, 0.3) !important;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.4) !important;
+        }
+        body {
+            background: #f0f4f9 !important;
+            background-image: radial-gradient(at 0% 0%, rgba(0, 103, 177, 0.05) 0px, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(0, 210, 255, 0.05) 0px, transparent 50%) !important;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* 아바타 모달 최상위 표시 - 사이드바보다 앞에 */
+        #avatarModal {
+            z-index: 9999 !important;
+            position: fixed !important;
+        }
+        #avatarModal > div {
+            z-index: 10000 !important;
+            position: relative !important;
+        }
+        /* 사이드바의 z-index를 낮춤 */
+        aside {
+            z-index: 1 !important;
+        }
+        
+        /* 직급별 아바타 효과 */
+        .avatar-container {
+            position: relative;
+        }
+        .avatar-glow {
+            position: absolute;
+            inset: -4px;
+            border-radius: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .avatar-container:hover .avatar-glow {
+            opacity: 1;
+        }
+        .rank-glow-5 {
+            animation: rotate-glow 3s linear infinite;
+        }
+        .rank-glow-6 {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        @keyframes rotate-glow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.05); }
+        }
+        .avatar-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            font-size: 16px;
+            z-index: 10;
         }
     </style>
 </head>
-<body class="flex min-h-screen">
-    <aside class="w-72 bg-white border-r border-gray-100 flex-shrink-0 sticky top-0 h-screen flex flex-col">
-        <div class="p-8">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-[#0067B3] rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-database text-white text-xs"></i>
+<body class="bg-pattern text-slate-800 flex min-h-screen">
+    <aside class="w-80 hidden lg:flex flex-col text-white shadow-2xl shrink-0 sticky top-0 h-screen border-r border-white/5 sidebar-gradient" style="z-index: 1;">
+        <div class="p-12">
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg neon-glow">
+                        <i class="fa-solid fa-database text-[#0067b1] text-lg"></i>
+                    </div>
+                    <span class="text-3xl font-extrabold tracking-tighter">NetApp</span>
                 </div>
-                <h1 class="text-xl font-black text-gray-900 tracking-tighter">
-                    NetApp <span class="text-[#0067B3]">IB</span>
-                </h1>
+                <span class="text-[10px] font-black text-blue-300/40 uppercase tracking-[0.4em] ml-1">INSTALLBASE SYSTEM</span>
             </div>
         </div>
 
-        <nav class="mt-4 px-6 flex-grow space-y-2">
-            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-3 mb-4">Main Menu</p>
-            
+        <nav class="flex-1 px-8 mt-4 space-y-3">
             <a href="{% url 'dashboard' %}" 
-               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'dashboard' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
-                <i class="fa-solid fa-grid-2-wide mr-3 w-5"></i>
-                <span class="font-semibold text-sm">Dashboard</span>
+               class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all {% if request.resolver_match.url_name == 'dashboard' %}nav-active{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+                <i class="fa-solid fa-grid-2-wide w-5"></i>
+                DASHBOARD
             </a>
 
             <a href="{% url 'installbase_list' %}" 
-               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'installbase_list' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
-                <i class="fa-solid fa-server mr-3 w-5"></i>
-                <span class="font-semibold text-sm">Install Base</span>
+               class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all group {% if request.resolver_match.url_name == 'installbase_list' %}nav-active{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+                <i class="fa-solid fa-server w-5 group-hover:text-blue-400"></i>
+                STORAGE
             </a>
 
             <a href="{% url 'clusterswitch_list' %}" 
-               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'clusterswitch_list' or request.resolver_match.url_name == 'clusterswitch_create' or request.resolver_match.url_name == 'clusterswitch_update' or request.resolver_match.url_name == 'clusterswitch_deleted_list' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
-                <i class="fa-solid fa-network-wired mr-3 w-5"></i>
-                <span class="font-semibold text-sm">Switches</span>
+               class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all group {% if request.resolver_match.url_name == 'clusterswitch_list' or request.resolver_match.url_name == 'clusterswitch_create' or request.resolver_match.url_name == 'clusterswitch_update' or request.resolver_match.url_name == 'clusterswitch_deleted_list' %}nav-active{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+                <i class="fa-solid fa-network-wired w-5 group-hover:text-blue-400"></i>
+                SWITCHES
             </a>
 
             <a href="{% url 'issue_list' %}" 
-               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'issue_list' or request.resolver_match.url_name == 'issue_create' or request.resolver_match.url_name == 'issue_update' or request.resolver_match.url_name == 'issue_detail' or request.resolver_match.url_name == 'issue_deleted_list' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
-                <i class="fa-solid fa-exclamation-triangle mr-3 w-5"></i>
-                <span class="font-semibold text-sm">이슈 관리</span>
+               class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all group {% if request.resolver_match.url_name == 'issue_list' or request.resolver_match.url_name == 'issue_create' or request.resolver_match.url_name == 'issue_update' or request.resolver_match.url_name == 'issue_detail' or request.resolver_match.url_name == 'issue_deleted_list' %}nav-active{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+                <i class="fa-solid fa-exclamation-triangle w-5 group-hover:text-blue-400"></i>
+                ISSUE MANAGEMENT
             </a>
 
             <a href="{% url 'rma_list' %}" 
-               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'rma_list' or request.resolver_match.url_name == 'rma_create' or request.resolver_match.url_name == 'rma_update' or request.resolver_match.url_name == 'rma_deleted_list' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
-                <i class="fa-solid fa-box mr-3 w-5"></i>
-                <span class="font-semibold text-sm">RMA 관리</span>
+               class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all group {% if request.resolver_match.url_name == 'rma_list' or request.resolver_match.url_name == 'rma_create' or request.resolver_match.url_name == 'rma_update' or request.resolver_match.url_name == 'rma_deleted_list' %}nav-active{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+                <i class="fa-solid fa-box w-5 group-hover:text-blue-400"></i>
+                RMA MANAGEMENT
             </a>
             
             {% if user.is_staff or user.is_superuser %}
             <a href="{% url 'netapp_api_management' %}" 
-               class="flex items-center px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'netapp_api_management' %}nav-active text-white{% else %}text-gray-500 hover:bg-blue-50 hover:text-[#0067B3]{% endif %}">
-                <i class="fa-solid fa-gear mr-3 w-5"></i>
-                <span class="font-semibold text-sm">NetApp API 관리</span>
+               class="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all group {% if request.resolver_match.url_name == 'netapp_api_management' %}nav-active{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+                <i class="fa-solid fa-gear w-5 group-hover:text-blue-400"></i>
+                API 관리
             </a>
             {% endif %}
         </nav>
 
-        <div class="p-6 border-t border-gray-50">
-            <div class="flex items-center gap-3 p-2 bg-gray-50 rounded-2xl">
-                <div class="w-10 h-10 bg-[#0067B3] rounded-xl flex items-center justify-center text-white font-bold">
-                    {{ user.username|first|upper }}
+        <div class="p-8">
+            <div class="bg-white rounded-3xl p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="avatar-container cursor-pointer group relative" onclick="openAvatarModal()">
+                        {% if user_profile %}
+                            {% with rank_data=user_profile.get_rank_data %}
+                            {% if user_profile.avatar_seed %}
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user_profile.avatar_seed }}" 
+                                     alt="Avatar" 
+                                     class="w-12 h-12 rounded-2xl border-2 transition-all shadow-md relative z-10"
+                                     style="border-color: {{ rank_data.border_color }};">
+                            {% else %}
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user.username }}" 
+                                     alt="Avatar" 
+                                     class="w-12 h-12 rounded-2xl border-2 transition-all shadow-md relative z-10"
+                                     style="border-color: {{ rank_data.border_color }};">
+                            {% endif %}
+                            {% if rank_data.glow_opacity != '0' %}
+                            <div class="avatar-glow {{ rank_data.glow_color }} {{ rank_data.animation }}" 
+                                 style="opacity: 0.{{ rank_data.glow_opacity }}; filter: blur(8px);"></div>
+                            {% endif %}
+                            {% if rank_data.badge %}
+                            <div class="avatar-badge">{{ rank_data.badge }}</div>
+                            {% endif %}
+                            {% endwith %}
+                        {% else %}
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user.username }}" 
+                                 alt="Avatar" 
+                                 class="w-12 h-12 rounded-2xl border-2 border-gray-200 transition-all shadow-md relative z-10">
+                        {% endif %}
+                        <div class="absolute inset-0 bg-black/0 hover:bg-black/10 rounded-2xl transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 z-20">
+                            <i class="fa-solid fa-camera text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-sm font-black text-gray-800 mb-0.5">{{ user.last_name }}{{ user.first_name|default:"" }}</h4>
+                            {% if user_profile %}
+                                {% with rank_data=user_profile.get_rank_data %}
+                                {% if rank_data.badge %}
+                                <span class="text-xs">{{ rank_data.badge }}</span>
+                                {% endif %}
+                                {% endwith %}
+                            {% endif %}
+                        </div>
+                        <p class="text-[10px] text-gray-400 font-medium tracking-tight">
+                            {% if user_profile %}{{ user_profile.get_user_rank_display }}{% else %}NetApp Certified Engineer{% endif %}
+                        </p>
+                    </div>
                 </div>
-                <div class="overflow-hidden">
-                    <p class="text-xs font-bold text-gray-800 truncate">{{ user.last_name }}{{ user.first_name }}</p>
-                    <p class="text-[10px] text-gray-400 uppercase">Engineer</p>
-                </div>
-                <a href="/admin/logout/" class="ml-auto text-gray-300 hover:text-red-500 transition-colors">
-                    <i class="fa-solid fa-right-from-bracket"></i>
+                <a href="/admin/logout/" class="block w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-[11px] font-bold transition-all text-center">
+                    <i class="fa-solid fa-right-from-bracket mr-2"></i>로그아웃
                 </a>
             </div>
         </div>
     </aside>
 
-    <main class="flex-grow overflow-y-auto h-screen custom-scrollbar">
-        <div class="max-w-[1400px] mx-auto">
+    <!-- 아바타 선택 모달 - 사이드바 밖으로 이동 -->
+    <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 99999 !important; position: fixed !important;" onclick="closeAvatarModal(event)">
+            <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col relative" style="z-index: 10000 !important; position: relative !important;" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-black text-gray-800">아바타 선택</h3>
+                    <button onclick="closeAvatarModal()" class="text-gray-400 hover:text-gray-600 transition">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-6 gap-3 mb-6 overflow-y-auto flex-1">
+                    {% for i in "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"|make_list %}
+                        {% with seed=user.username|add:i|add:"avatar" %}
+                        <div class="cursor-pointer group relative" onclick="selectAvatar('{{ seed }}')">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ seed }}" 
+                                 alt="Avatar {{ seed }}" 
+                                 class="w-full rounded-xl border-2 border-gray-200 group-hover:border-[#0067b1] transition-all shadow-sm">
+                            <div class="absolute inset-0 bg-[#0067b1]/0 group-hover:bg-[#0067b1]/10 rounded-xl transition-all"></div>
+                        </div>
+                        {% endwith %}
+                    {% endfor %}
+                    {% for i in "0123456789"|make_list %}
+                        {% with seed=user.username|add:"netapp"|add:i %}
+                        <div class="cursor-pointer group relative" onclick="selectAvatar('{{ seed }}')">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ seed }}" 
+                                 alt="Avatar {{ seed }}" 
+                                 class="w-full rounded-xl border-2 border-gray-200 group-hover:border-[#0067b1] transition-all shadow-sm">
+                            <div class="absolute inset-0 bg-[#0067b1]/0 group-hover:bg-[#0067b1]/10 rounded-xl transition-all"></div>
+                        </div>
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+                <div class="flex gap-3 justify-end pt-4 border-t border-gray-100">
+                    <button onclick="closeAvatarModal()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 아바타 선택 모달 - 사이드바 밖으로 이동하여 최상위에 표시 -->
+    <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 99999 !important; position: fixed !important;" onclick="closeAvatarModal(event)">
+        <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col relative" style="z-index: 100000 !important; position: relative !important;" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-black text-gray-800">아바타 선택</h3>
+                <button onclick="closeAvatarModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-6 gap-3 mb-6 overflow-y-auto flex-1">
+                {% for i in "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"|make_list %}
+                    {% with seed=user.username|add:i|add:"avatar" %}
+                    <div class="cursor-pointer group relative" onclick="selectAvatar('{{ seed }}')">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ seed }}" 
+                             alt="Avatar {{ seed }}" 
+                             class="w-full rounded-xl border-2 border-gray-200 group-hover:border-[#0067b1] transition-all shadow-sm">
+                        <div class="absolute inset-0 bg-[#0067b1]/0 group-hover:bg-[#0067b1]/10 rounded-xl transition-all"></div>
+                    </div>
+                    {% endwith %}
+                {% endfor %}
+                {% for i in "0123456789"|make_list %}
+                    {% with seed=user.username|add:"netapp"|add:i %}
+                    <div class="cursor-pointer group relative" onclick="selectAvatar('{{ seed }}')">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ seed }}" 
+                             alt="Avatar {{ seed }}" 
+                             class="w-full rounded-xl border-2 border-gray-200 group-hover:border-[#0067b1] transition-all shadow-sm">
+                        <div class="absolute inset-0 bg-[#0067b1]/0 group-hover:bg-[#0067b1]/10 rounded-xl transition-all"></div>
+                    </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+            <div class="flex gap-3 justify-end pt-4 border-t border-gray-100">
+                <button onclick="closeAvatarModal()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        function openAvatarModal() {
+            document.getElementById('avatarModal').classList.remove('hidden');
+        }
+        
+        function closeAvatarModal(event) {
+            if (event && event.target !== event.currentTarget && !event.target.closest('.bg-white')) {
+                return;
+            }
+            document.getElementById('avatarModal').classList.add('hidden');
+        }
+        
+        function selectAvatar(seed) {
+            const csrftoken = getCookie('csrftoken');
+            fetch('/ajax/update-avatar/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ seed: seed })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('아바타 업데이트에 실패했습니다: ' + (data.error || '알 수 없는 오류'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('아바타 업데이트 중 오류가 발생했습니다.');
+            });
+        }
+    </script>
+
+    <main class="flex-1 flex flex-col min-w-0">
+        <div class="flex-1 overflow-y-auto">
             {% block content %}{% endblock %}
         </div>
     </main>

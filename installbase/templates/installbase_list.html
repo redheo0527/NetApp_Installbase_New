@@ -2,16 +2,21 @@
 
 {% block content %}
 <style>
-    body { overflow-x: hidden; }
+    body { overflow-x: hidden; background-color: #f8fafc; }
     
     /* 레이아웃 및 고객사 스타일 */
-    .customer-column { min-width: 200px; white-space: nowrap; }
+    .customer-column { min-width: 180px; white-space: nowrap; }
     .logo-container {
         width: 90px; height: 55px; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center;
         border-radius: 1rem; background-color: #ffffff;
-        border: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         margin-bottom: 0.4rem;
+        transition: all 0.3s ease;
+    }
+    .logo-container:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     }
     .logo-container img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
     .customer-name { font-size: 1rem; font-weight: 900; color: #1f2937; }
@@ -39,7 +44,7 @@
         position: relative; cursor: pointer; color: #cbd5e1; 
         padding: 4px; margin-right: 12px; transition: color 0.2s; 
     }
-    .filter-trigger:hover, .filter-trigger.active { color: #0067B3; }
+    .filter-trigger:hover, .filter-trigger.active { color: #0067b1; }
     .sort-trigger { cursor: pointer; user-select: none; font-weight: 800; transition: color 0.2s; }
 
     .filter-popup {
@@ -47,14 +52,12 @@
         background: white; border: 1px solid #e2e8f0; padding: 14px; border-radius: 12px;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); z-index: 110; 
         min-width: 220px; text-transform: none; font-weight: normal;
-        margin-top: 8px; /* 트리거와 모달 사이 간격 */
+        margin-top: 8px;
     }
-    /* 트리거와 모달 모두에 hover 시 모달 표시 */
     .filter-trigger:hover .filter-popup,
     .filter-popup:hover { 
         display: block; 
     }
-    /* 트리거와 모달 사이의 보이지 않는 브릿지 영역 */
     .filter-trigger::after {
         content: '';
         position: absolute;
@@ -72,14 +75,21 @@
         display: block; width: 100%; text-align: left; padding: 6px 10px; 
         font-size: 11px; color: #64748b; border-radius: 6px; margin-bottom: 2px;
     }
-    .filter-op-btn:hover { background: #f1f5f9; color: #0067B3; }
-    .filter-op-btn.selected { background: #e0f2fe; color: #0067B3; font-weight: 800; }
+    .filter-op-btn:hover { background: #f1f5f9; color: #0067b1; }
+    .filter-op-btn.selected { background: #e0f2fe; color: #0067b1; font-weight: 800; }
 
     .sort-icon { font-size: 10px; margin-left: 4px; opacity: 0.5; transition: color 0.2s; }
-    .sort-trigger.active .sort-icon { color: #0067B3; opacity: 1; }
+    .sort-trigger.active .sort-icon { color: #0067b1; opacity: 1; }
     #noResultRow.hidden { display: none !important; }
 
-    .main-row { border-bottom: 1px solid #e2e8f0 !important; }
+    .main-row { 
+        border-bottom: 1px solid #f1f5f9 !important; 
+        transition: all 0.2s ease;
+    }
+    .main-row:hover {
+        background-color: #f8fafc;
+        transform: translateX(4px);
+    }
     .main-row:last-child { border-bottom: none !important; }
 
     /* 페이지네이션 스타일 */
@@ -92,15 +102,16 @@
         border: 1px solid #e2e8f0; color: #64748b; font-weight: 700; font-size: 0.875rem;
         transition: all 0.2s;
     }
-    .page-link:hover { background: #f8fafc; color: #0067B3; border-color: #0067B3; }
-    .page-link.active { background: #0067B3; color: white; border-color: #0067B3; }
+    .page-link:hover { background: #f8fafc; color: #0067b1; border-color: #0067b1; }
+    .page-link.active { background: #0067b1; color: white; border-color: #0067b1; }
     .page-link.disabled { opacity: 0.5; cursor: not-allowed; }
 </style>
 
-<div class="max-w-[1600px] mx-auto py-8 px-8">
-    <div class="mb-8 flex justify-between items-center">
+<div class="max-w-7xl mx-auto py-12 px-6">
+    <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
         <div>
-            <h2 class="text-3xl font-black text-gray-900 tracking-tight italic uppercase">Inventory</h2>
+            <h2 class="text-3xl font-bold text-gray-800">ONTAP Systems Inventory</h2>
+            <p class="text-gray-400 mt-1">전체 장비 인벤토리 및 관리</p>
         </div>
         
         <div class="flex items-center gap-4">
@@ -114,7 +125,7 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-visible">
+    <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-50 overflow-hidden">
         <div class="p-8 border-b border-gray-50 flex justify-between items-center">
             <div class="flex gap-2 items-center">
                 <span class="px-4 py-1.5 bg-blue-50 text-[#0067B3] rounded-xl text-xs font-bold">전체 {{ page_obj.paginator.count|default:installbases.count }}</span>
@@ -130,204 +141,231 @@
                     <i class="fa-solid fa-plus mr-1"></i> 신규 장비 등록
                 </a>
             </div>
-        </div>
+            </div>
+            
         <div class="overflow-x-auto rounded-[2rem]">
-            <table id="inventoryTable" class="w-full text-left border-collapse min-w-[1300px]">
-                <thead>
-                    <tr class="text-gray-400 text-[10px] uppercase tracking-widest bg-gray-50/50 border-b border-gray-200">
-                        <th class="px-8 py-4 font-bold customer-column">
-                            <div class="th-content">
-                                <div class="filter-trigger" id="ft-0">
-                                    <i class="fa-solid fa-filter"></i>
-                                    <div class="filter-popup">
-                                        <input type="text" placeholder="고객사 검색..." onkeyup="updateFilter(0, this.value)">
-                                        <div id="ops-0">
-                                            <button class="filter-op-btn selected" onclick="setOp(0, 'contains')">포함</button>
-                                            <button class="filter-op-btn" onclick="setOp(0, 'not_contains')">미포함</button>
-                                            <button class="filter-op-btn" onclick="setOp(0, 'equals')">일치</button>
-                                            <button class="filter-op-btn" onclick="setOp(0, 'not_equals')">불일치</button>
-                                            <button class="filter-op-btn" onclick="setOp(0, 'starts')">시작문구</button>
-                                            <button class="filter-op-btn" onclick="setOp(0, 'ends')">종료문구</button>
+            <table id="inventoryTable" class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-gray-400 text-[10px] uppercase tracking-widest bg-gray-50/50 border-b border-gray-200">
+                            <th class="px-6 py-4 font-bold customer-column" style="width: 15%;">
+                                <div class="th-content">
+                                    <div class="filter-trigger" id="ft-0">
+                                        <i class="fa-solid fa-filter"></i>
+                                        <div class="filter-popup">
+                                            <input type="text" placeholder="고객사 검색..." onkeyup="updateFilter(0, this.value)">
+                                            <div id="ops-0">
+                                                <button class="filter-op-btn selected" onclick="setOp(0, 'contains')">포함</button>
+                                                <button class="filter-op-btn" onclick="setOp(0, 'not_contains')">미포함</button>
+                                                <button class="filter-op-btn" onclick="setOp(0, 'equals')">일치</button>
+                                                <button class="filter-op-btn" onclick="setOp(0, 'not_equals')">불일치</button>
+                                                <button class="filter-op-btn" onclick="setOp(0, 'starts')">시작문구</button>
+                                                <button class="filter-op-btn" onclick="setOp(0, 'ends')">종료문구</button>
+                                            </div>
                                         </div>
                                     </div>
+                                    <span class="sort-trigger" onclick="sortTable(0, this)">Customer <i class="fa-solid fa-sort sort-icon"></i></span>
                                 </div>
-                                <span class="sort-trigger" onclick="sortTable(0, this)">Customer <i class="fa-solid fa-sort sort-icon"></i></span>
-                            </div>
-                        </th>
-                        <th class="px-6 py-4 font-bold">
-                            <div class="th-content">
-                                <div class="filter-trigger" id="ft-1">
-                                    <i class="fa-solid fa-filter"></i>
-                                    <div class="filter-popup">
-                                        <input type="text" placeholder="시스템 정보 검색..." onkeyup="updateFilter(1, this.value)">
-                                        <div id="ops-1">
-                                            <button class="filter-op-btn selected" onclick="setOp(1, 'contains')">포함</button>
-                                            <button class="filter-op-btn" onclick="setOp(1, 'not_contains')">미포함</button>
-                                            <button class="filter-op-btn" onclick="setOp(1, 'equals')">일치</button>
-                                            <button class="filter-op-btn" onclick="setOp(1, 'not_equals')">불일치</button>
-                                            <button class="filter-op-btn" onclick="setOp(1, 'starts')">시작문구</button>
-                                            <button class="filter-op-btn" onclick="setOp(1, 'ends')">종료문구</button>
+                            </th>
+                            <th class="px-6 py-4 font-bold" style="width: 25%;">
+                                <div class="th-content">
+                                    <div class="filter-trigger" id="ft-1">
+                                        <i class="fa-solid fa-filter"></i>
+                                        <div class="filter-popup">
+                                            <input type="text" placeholder="시스템 정보 검색..." onkeyup="updateFilter(1, this.value)">
+                                            <div id="ops-1">
+                                                <button class="filter-op-btn selected" onclick="setOp(1, 'contains')">포함</button>
+                                                <button class="filter-op-btn" onclick="setOp(1, 'not_contains')">미포함</button>
+                                                <button class="filter-op-btn" onclick="setOp(1, 'equals')">일치</button>
+                                                <button class="filter-op-btn" onclick="setOp(1, 'not_equals')">불일치</button>
+                                                <button class="filter-op-btn" onclick="setOp(1, 'starts')">시작문구</button>
+                                                <button class="filter-op-btn" onclick="setOp(1, 'ends')">종료문구</button>
+                                            </div>
                                         </div>
                                     </div>
+                                    <span class="sort-trigger" onclick="sortTable(1, this)">System Info <i class="fa-solid fa-sort sort-icon"></i></span>
                                 </div>
-                                <span class="sort-trigger" onclick="sortTable(1, this)">System Info <i class="fa-solid fa-sort sort-icon"></i></span>
-                            </div>
-                        </th>
-                        <th class="px-6 py-4 font-bold text-center">Serial & Nodes</th>
-                        <th class="px-6 py-4 font-bold text-center">Inspection</th>
-                        <th class="px-6 py-4 font-bold text-center sort-trigger" onclick="sortTable(4, this)">Contract End <i class="fa-solid fa-sort sort-icon"></i></th>
-                        <th class="px-8 py-4 font-bold text-right">Detail</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-50">
-                    {% for item in installbases %}
-                    <tr class="hover:bg-blue-50/5 transition-all main-row" data-contract-val="{{ item.contract_end_date|date:'Ymd'|default:'00000000' }}">
-                        <td class="px-8 py-3 customer-column text-center data-cell" data-col="0">
-                            <div class="flex flex-col items-center">
-                                <div class="logo-container">
-                                    {% if item.customer.logo %}<img src="{{ item.customer.logo.url }}">{% else %}
-                                    <div class="w-full h-full bg-blue-50 flex items-center justify-center text-[#0067B3] font-black text-xl italic">{{ item.customer|slice:":1" }}</div>
-                                    {% endif %}
-                                </div>
-                                <span class="customer-name">{{ item.customer }}</span>
-                            </div>
-                        </td>
-
-                        <td class="px-6 py-3 data-cell" data-col="1">
-                            <div class="flex flex-col">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-lg font-black text-[#0067B3]">{{ item.cluster_name }}</span>
-                                    {% if item.country %}
-                                        <span class="country-flag-list inline-block w-8 h-5 overflow-hidden rounded-sm bg-gray-50 border border-gray-200" data-country="{{ item.country|upper }}"></span>
-                                    {% endif %}
-                                </div>
-                                <div class="flex items-center gap-1.5 mt-0.5">
-                                    {% with m_str=item.cluster_model_names|join:" " %}
-                                        {% if "AFF" in m_str or " A" in m_str or " C" in m_str or item.cluster_model_names.0|slice:":1" == "A" or item.cluster_model_names.0|slice:":1" == "C" %}
-                                            <span class="px-1.5 py-0.5 bg-[#0067B3] text-[9px] font-black text-white rounded italic">AFF</span>
+                            </th>
+                            <th class="px-6 py-4 font-bold text-center" style="width: 15%;">Serial & Nodes</th>
+                            <th class="px-6 py-4 font-bold text-center" style="width: 12%;">Inspection</th>
+                            <th class="px-6 py-4 font-bold text-center sort-trigger" style="width: 13%;" onclick="sortTable(4, this)">Contract End <i class="fa-solid fa-sort sort-icon"></i></th>
+                            <th class="px-6 py-4 font-bold text-right" style="width: 8%;">Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for item in installbases %}
+                        <tr class="main-row" data-contract-val="{{ item.contract_end_date|date:'Ymd'|default:'00000000' }}">
+                            <td class="px-6 py-3 customer-column text-center data-cell" data-col="0" style="width: 15%;">
+                                <div class="flex flex-col items-center">
+                                    <div class="logo-container">
+                                        {% if item.customer.logo %}
+                                            <img src="{{ item.customer.logo.url }}">
+                                        {% else %}
+                                            <div class="w-full h-full bg-blue-50 flex items-center justify-center text-[#0067B3] font-black text-xl italic">{{ item.customer|slice:":1" }}</div>
                                         {% endif %}
-                                        {% if "FAS" in m_str %}
-                                            <span class="px-1.5 py-0.5 bg-gray-900 text-[9px] font-black text-white rounded italic">FAS</span>
-                                        {% endif %}
-                                    {% endwith %}
-                                    <span class="text-xs font-bold text-gray-400">{{ item.cluster_model_names|join:" / " }}</span>
-                                </div>
-                                {% if item.ontap_version %}
-                                <div class="flex items-center gap-1 mt-0.5">
-                                    <span class="text-[10px] font-semibold text-gray-500">ONTAP:</span>
-                                    <span class="text-[11px] font-bold text-gray-600">{{ item.ontap_version }}</span>
-                                </div>
-                                {% endif %}
-                                <span class="text-[12px] font-bold text-gray-700 mt-1 uppercase">{{ item.service_name|default:"Standard Support" }}</span>
-                            </div>
-                        </td>
-
-                        <td class="px-6 py-3 text-center">
-                            <div class="sn-wrapper {% if item.cluster_serial_numbers|length > 2 %}has-more{% endif %}">
-                                {% for serial in item.cluster_serial_numbers|slice:":2" %}<span class="sn-badge">{{ serial }}</span>{% endfor %}
-                                {% if item.cluster_serial_numbers|length > 2 %}
-                                    <div class="text-gray-300 text-[10px]">⋮</div>
-                                    <div class="sn-tooltip shadow-2xl">
-                                        <p class="text-[9px] font-bold text-blue-500 mb-2 uppercase border-b pb-1 text-center">All Serials</p>
-                                        {% for serial in item.cluster_serial_numbers %}<span class="sn-badge">{{ serial }}</span>{% endfor %}
                                     </div>
+                                    <span class="customer-name">{{ item.customer }}</span>
+                                </div>
+                            </td>
+
+                            <td class="px-6 py-3 data-cell" data-col="1" style="width: 25%;">
+                                <div class="flex flex-col">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-lg font-black text-[#0067B3]">{{ item.cluster_name }}</span>
+                                        {% if item.country %}
+                                            <span class="country-flag-list inline-block w-8 h-5 overflow-hidden rounded-sm bg-gray-50 border border-gray-200" data-country="{{ item.country|upper }}"></span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex items-center gap-1.5 mt-0.5">
+                                        {% with m_str=item.cluster_model_names|join:" " %}
+                                            {% if "AFF" in m_str or " A" in m_str or " C" in m_str or item.cluster_model_names.0|slice:":1" == "A" or item.cluster_model_names.0|slice:":1" == "C" %}
+                                                <span class="px-1.5 py-0.5 bg-[#0067B3] text-[9px] font-black text-white rounded italic">AFF</span>
+                                            {% endif %}
+                                            {% if "FAS" in m_str %}
+                                                <span class="px-1.5 py-0.5 bg-gray-900 text-[9px] font-black text-white rounded italic">FAS</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                        <span class="text-xs font-bold text-gray-400">{{ item.cluster_model_names|join:" / " }}</span>
+                                    </div>
+                                    {% if item.ontap_version %}
+                                    <div class="flex items-center gap-1 mt-0.5">
+                                        <span class="text-[10px] font-semibold text-gray-500">ONTAP:</span>
+                                        <span class="text-[11px] font-bold text-gray-600">{{ item.ontap_version }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <span class="text-[12px] font-bold text-gray-700 mt-1 uppercase">{{ item.service_name|default:"Standard Support" }}</span>
+                                </div>
+                            </td>
+
+                            <td class="px-6 py-3 text-center" style="width: 15%;">
+                                <div class="sn-wrapper {% if item.cluster_serial_numbers|length > 2 %}has-more{% endif %}">
+                                    {% for serial in item.cluster_serial_numbers|slice:":2" %}
+                                        <span class="sn-badge">{{ serial }}</span>
+                                    {% endfor %}
+                                    {% if item.cluster_serial_numbers|length > 2 %}
+                                        <div class="text-gray-300 text-[10px]">⋮</div>
+                                        <div class="sn-tooltip shadow-2xl">
+                                            <p class="text-[9px] font-bold text-blue-500 mb-2 uppercase border-b pb-1 text-center">All Serials</p>
+                                            {% for serial in item.cluster_serial_numbers %}
+                                                <span class="sn-badge">{{ serial }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5 flex items-center gap-1
+                                        {% if item.cluster_serial_numbers|length <= 2 %}bg-green-100 text-green-700
+                                        {% elif item.cluster_serial_numbers|length <= 4 %}bg-blue-100 text-blue-700
+                                        {% else %}bg-purple-100 text-purple-700{% endif %}">
+                                        {{ item.cluster_serial_numbers|length }}-Node
+                                    </span>
+                                </div>
+                            </td>
+
+                            <td class="px-6 py-3 text-center" style="width: 12%;">
+                                {% if item.periodic_inspection == 'monthly' %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg text-[11px] font-bold border border-blue-100 shadow-sm">
+                                        <i class="fa-solid fa-clock-rotate-left"></i>월점검
+                                    </span>
+                                {% elif item.periodic_inspection == 'quarter' %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-600 rounded-lg text-[11px] font-bold border border-purple-100 shadow-sm">
+                                        <i class="fa-solid fa-clock-rotate-left"></i>분기
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 rounded-lg text-[11px] font-bold border border-red-100 shadow-sm">
+                                        <i class="fa-solid fa-clock-rotate-left"></i>비대상
+                                    </span>
                                 {% endif %}
-                                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5 flex items-center gap-1
-                                    {% if item.cluster_serial_numbers|length <= 2 %}bg-green-100 text-green-700
-                                    {% elif item.cluster_serial_numbers|length <= 4 %}bg-blue-100 text-blue-700
-                                    {% else %}bg-purple-100 text-purple-700{% endif %}">
-                                    {{ item.cluster_serial_numbers|length }}-Node
+                            </td>
+
+                            <td class="px-6 py-3 text-center data-cell" data-col="4" style="width: 13%;">
+                                <span class="text-sm font-black {% if item.days_left <= 0 %}text-red-600{% else %}text-blue-600{% endif %}">
+                                    {{ item.contract_end_date|date:"Y. m. d" }}
                                 </span>
-                            </div>
-                        </td>
+                            </td>
 
-                        <td class="px-6 py-3 text-center">
-                            {% if item.periodic_inspection == 'monthly' %}
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[11px] font-bold border border-blue-100"><i class="fa-solid fa-clock-rotate-left"></i>월점검</span>
-                            {% elif item.periodic_inspection == 'quarter' %}
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-[11px] font-bold border border-purple-100"><i class="fa-solid fa-clock-rotate-left"></i>분기</span>
-                            {% else %}
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 rounded text-[11px] font-bold border border-red-100"><i class="fa-solid fa-clock-rotate-left"></i>비대상</span>
-                            {% endif %}
-                        </td>
-
-                        <td class="px-6 py-3 text-center data-cell" data-col="4">
-                            <span class="text-sm font-black {% if item.days_left <= 0 %}text-red-600{% else %}text-blue-600{% endif %}">{{ item.contract_end_date|date:"Y. m. d" }}</span>
-                        </td>
-
-                        <td class="px-8 py-3 text-right">
-                            <a href="{% url 'installbase_detail' item.pk %}" class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 text-gray-300 hover:bg-[#0067B3] hover:text-white transition-all">
-                                <i class="fa-solid fa-arrow-right text-xs"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                        <tr id="noResultRow"><td colspan="6" class="py-20 text-center text-gray-300 font-bold italic">{% if query %}검색된 결과가 없습니다.{% else %}결과가 없습니다.{% endif %}</td></tr>
-                    {% endfor %}
-                    <tr id="noResultRow" class="hidden"><td colspan="6" class="py-20 text-center text-gray-300 font-bold italic">결과가 없습니다.</td></tr>
-                </tbody>
-            </table>
+                            <td class="px-6 py-3 text-right" style="width: 8%;">
+                                <a href="{% url 'installbase_detail' item.pk %}" class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 text-gray-300 hover:bg-[#0067B3] hover:text-white transition-all">
+                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                            <tr id="noResultRow">
+                                <td colspan="6" class="py-20 text-center">
+                                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                                        <i class="fa-solid fa-inbox text-4xl"></i>
+                                    </div>
+                                    <p class="text-gray-500 font-bold">
+                                        {% if query %}검색된 결과가 없습니다.{% else %}결과가 없습니다.{% endif %}
+                                    </p>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        <tr id="noResultRow" class="hidden">
+                            <td colspan="6" class="py-20 text-center">
+                                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                                    <i class="fa-solid fa-inbox text-4xl"></i>
+                                </div>
+                                <p class="text-gray-500 font-bold">결과가 없습니다.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    {% if is_paginated %}
-    <div class="pagination-container">
-        {% if page_obj.has_previous %}
-            <a href="#" onclick="goToPage(1); return false;" class="page-link">처음</a>
-            <a href="#" onclick="goToPage({{ page_obj.previous_page_number }}); return false;" class="page-link">이전</a>
-        {% else %}
-            <span class="page-link disabled">처음</span>
-            <span class="page-link disabled">이전</span>
-        {% endif %}
+        {% if is_paginated %}
+        <div class="pagination-container">
+            {% if page_obj.has_previous %}
+                <a href="#" onclick="goToPage(1); return false;" class="page-link">처음</a>
+                <a href="#" onclick="goToPage({{ page_obj.previous_page_number }}); return false;" class="page-link">이전</a>
+            {% else %}
+                <span class="page-link disabled">처음</span>
+                <span class="page-link disabled">이전</span>
+            {% endif %}
 
-        {# 첫 페이지 #}
-        {% if page_obj.number == 1 %}
-            <span class="page-link active">1</span>
-        {% else %}
-            <a href="#" onclick="goToPage(1); return false;" class="page-link">1</a>
-        {% endif %}
+            {% if page_obj.number == 1 %}
+                <span class="page-link active">1</span>
+            {% else %}
+                <a href="#" onclick="goToPage(1); return false;" class="page-link">1</a>
+            {% endif %}
 
-        {# 첫 페이지와 현재 페이지 범위 사이에 간격이 있으면 "..." 표시 #}
-        {% if page_obj.number > 4 %}
-            <span class="page-link" style="cursor: default; border: none; background: transparent; color: #64748b;">...</span>
-        {% endif %}
+            {% if page_obj.number > 4 %}
+                <span class="page-link" style="cursor: default; border: none; background: transparent; color: #64748b;">...</span>
+            {% endif %}
 
-        {# 현재 페이지 ±2 범위 표시 #}
-        {% for num in page_obj.paginator.page_range %}
-            {% if num > 1 and num < page_obj.paginator.num_pages %}
-                {% if num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
-                    {% if page_obj.number == num %}
-                        <span class="page-link active">{{ num }}</span>
-                    {% else %}
-                        <a href="#" onclick="goToPage({{ num }}); return false;" class="page-link">{{ num }}</a>
+            {% for num in page_obj.paginator.page_range %}
+                {% if num > 1 and num < page_obj.paginator.num_pages %}
+                    {% if num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                        {% if page_obj.number == num %}
+                            <span class="page-link active">{{ num }}</span>
+                        {% else %}
+                            <a href="#" onclick="goToPage({{ num }}); return false;" class="page-link">{{ num }}</a>
+                        {% endif %}
                     {% endif %}
                 {% endif %}
+            {% endfor %}
+
+            {% if page_obj.number < page_obj.paginator.num_pages|add:'-3' %}
+                <span class="page-link" style="cursor: default; border: none; background: transparent; color: #64748b;">...</span>
             {% endif %}
-        {% endfor %}
 
-        {# 현재 페이지 범위와 마지막 페이지 사이에 간격이 있으면 "..." 표시 #}
-        {% if page_obj.number < page_obj.paginator.num_pages|add:'-3' %}
-            <span class="page-link" style="cursor: default; border: none; background: transparent; color: #64748b;">...</span>
-        {% endif %}
+            {% if page_obj.paginator.num_pages > 1 %}
+                {% if page_obj.number == page_obj.paginator.num_pages %}
+                    <span class="page-link active">{{ page_obj.paginator.num_pages }}</span>
+                {% else %}
+                    <a href="#" onclick="goToPage({{ page_obj.paginator.num_pages }}); return false;" class="page-link">{{ page_obj.paginator.num_pages }}</a>
+                {% endif %}
+            {% endif %}
 
-        {# 마지막 페이지 #}
-        {% if page_obj.paginator.num_pages > 1 %}
-            {% if page_obj.number == page_obj.paginator.num_pages %}
-                <span class="page-link active">{{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="#" onclick="goToPage({{ page_obj.next_page_number }}); return false;" class="page-link">다음</a>
+                <a href="#" onclick="goToPage({{ page_obj.paginator.num_pages }}); return false;" class="page-link">마지막</a>
             {% else %}
-                <a href="#" onclick="goToPage({{ page_obj.paginator.num_pages }}); return false;" class="page-link">{{ page_obj.paginator.num_pages }}</a>
+                <span class="page-link disabled">다음</span>
+                <span class="page-link disabled">마지막</span>
             {% endif %}
-        {% endif %}
-
-        {% if page_obj.has_next %}
-            <a href="#" onclick="goToPage({{ page_obj.next_page_number }}); return false;" class="page-link">다음</a>
-            <a href="#" onclick="goToPage({{ page_obj.paginator.num_pages }}); return false;" class="page-link">마지막</a>
-        {% else %}
-            <span class="page-link disabled">다음</span>
-            <span class="page-link disabled">마지막</span>
+        </div>
         {% endif %}
     </div>
-    {% endif %}
 </div>
 
 <script>
@@ -370,27 +408,22 @@
     const queryParam = urlParams.get('q');
     const globalSearchInput = document.getElementById('globalSearch');
     
-    // 검색어 복원
     if (queryParam) {
         globalSearchInput.value = queryParam;
     }
     
-    // 필터 상태 복원
     for (let i = 0; i < 2; i++) {
         const filterText = urlParams.get(`filter_${i}_text`);
         const filterOp = urlParams.get(`filter_${i}_op`);
         if (filterText) {
             filterState[i].text = filterText.toLowerCase().trim();
             filterState[i].op = filterOp || 'contains';
-            // 필터 입력 필드 업데이트
             const filterInput = document.querySelector(`#ft-${i} + .filter-popup input`);
             if (filterInput) {
                 filterInput.value = filterText;
             }
-            // 필터 아이콘 활성화
             const icon = document.querySelector(`#ft-${i}`);
             if (icon) icon.classList.add('active');
-            // 필터 옵션 버튼 선택
             const opBtns = document.querySelectorAll(`#ops-${i} .filter-op-btn`);
             opBtns.forEach(btn => {
                 if (btn.textContent.trim() === (filterOp === 'contains' ? '포함' : 
@@ -404,13 +437,11 @@
         }
     }
     
-    // 정렬 상태 복원 (서버 사이드 정렬 파라미터 사용)
     const sortCol = urlParams.get('sort_col');
     const sortOrder = urlParams.get('sort_order');
     if (sortCol !== null) {
         const colIdx = parseInt(sortCol);
         sortOrders[colIdx] = sortOrder === 'asc';
-        // 정렬 아이콘 업데이트
         const triggers = document.querySelectorAll('.sort-trigger');
         let trigger = null;
         if (colIdx === 0) trigger = triggers[0];
@@ -426,73 +457,53 @@
         }
     }
     
-    // 서버 사이드 검색이 있으면 클라이언트 사이드 필터링 비활성화
     if (queryParam) {
-        // 서버 사이드 검색 결과는 그대로 표시 (클라이언트 필터링 건너뛰기)
-        // noResultRow는 템플릿에서 이미 처리됨
+        // 서버 사이드 검색 결과는 그대로 표시
     } else {
-        // 서버 사이드 검색이 없을 때만 클라이언트 사이드 필터링 적용
         window.onload = applyAllFilters;
     }
 
     function updateURLParams() {
         const params = new URLSearchParams();
-        
-        // 검색어 추가
         const queryParam = document.getElementById('globalSearch').value.trim();
         if (queryParam) {
             params.set('q', queryParam);
         }
-        
-        // 필터 상태 추가
         for (let i in filterState) {
             if (filterState[i].text) {
                 params.set(`filter_${i}_text`, filterState[i].text);
                 params.set(`filter_${i}_op`, filterState[i].op);
             }
         }
-        
-        // 정렬 상태 추가 (서버 사이드 정렬 파라미터 사용)
         const sortCol = new URLSearchParams(window.location.search).get('sort_col');
         const sortOrder = new URLSearchParams(window.location.search).get('sort_order');
         if (sortCol !== null) {
             params.set('sort_col', sortCol);
             params.set('sort_order', sortOrder || 'desc');
         }
-        
-        // URL 업데이트 (페이지는 1로 리셋)
         params.set('page', '1');
         window.history.pushState({}, '', '?' + params.toString());
     }
     
     function goToPage(pageNum) {
         const params = new URLSearchParams();
-        
-        // 검색어 추가
         const queryParam = document.getElementById('globalSearch').value.trim();
         if (queryParam) {
             params.set('q', queryParam);
         }
-        
-        // 필터 상태 추가
         for (let i in filterState) {
             if (filterState[i].text) {
                 params.set(`filter_${i}_text`, filterState[i].text);
                 params.set(`filter_${i}_op`, filterState[i].op);
             }
         }
-        
-        // 정렬 상태 추가 (서버 사이드 정렬 파라미터 사용)
         const sortCol = new URLSearchParams(window.location.search).get('sort_col');
         const sortOrder = new URLSearchParams(window.location.search).get('sort_order');
         if (sortCol !== null) {
             params.set('sort_col', sortCol);
             params.set('sort_order', sortOrder || 'desc');
         }
-        
-        // 페이지 번호 추가
         params.set('page', pageNum);
-        
         window.location.href = '?' + params.toString();
     }
 
@@ -520,44 +531,30 @@
     }
 
     function sortTable(colIdx, element) {
-        // 정렬 상태 토글
         const currentSortCol = new URLSearchParams(window.location.search).get('sort_col');
         const currentSortOrder = new URLSearchParams(window.location.search).get('sort_order');
-        
-        // 같은 컬럼을 다시 클릭하면 정렬 순서 토글, 다른 컬럼이면 오름차순으로 시작
         let newSortOrder = 'asc';
         if (currentSortCol == colIdx && currentSortOrder === 'asc') {
             newSortOrder = 'desc';
         }
-        
-        // 서버 사이드 정렬을 위해 페이지 이동
         goToPageWithSort(colIdx, newSortOrder);
     }
     
     function goToPageWithSort(sortCol, sortOrder) {
         const params = new URLSearchParams();
-        
-        // 검색어 추가
         const queryParam = document.getElementById('globalSearch').value.trim();
         if (queryParam) {
             params.set('q', queryParam);
         }
-        
-        // 필터 상태 추가
         for (let i in filterState) {
             if (filterState[i].text) {
                 params.set(`filter_${i}_text`, filterState[i].text);
                 params.set(`filter_${i}_op`, filterState[i].op);
             }
         }
-        
-        // 정렬 파라미터 추가
         params.set('sort_col', sortCol);
         params.set('sort_order', sortOrder);
-        
-        // 페이지는 1로 리셋
         params.set('page', '1');
-        
         window.location.href = '?' + params.toString();
     }
     

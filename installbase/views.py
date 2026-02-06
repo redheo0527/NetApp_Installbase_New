@@ -2,7 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
-from .models import InstallBase, Product, Customer, ExpansionHistory, ClusterSwitch, SwitchModel, Issue, RMA, Part, NetAppAPIConfig
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from .models import InstallBase, Product, Customer, ExpansionHistory, ClusterSwitch, SwitchModel, Issue, RMA, Part, NetAppAPIConfig, UserProfile
 from django.utils import timezone
 from datetime import timedelta, datetime
 from .forms import InstallBaseForm, ClusterSwitchForm, SwitchModelForm, IssueForm, RMAForm, PartForm
@@ -84,47 +86,61 @@ def installbase_list(request):
     # cluster_name별로 그룹화하여 첫 번째 노드만 가져오기
     # 성능 최적화: 한 번의 쿼리로 모든 데이터 가져오기
     
-    # 각 cluster_name의 첫 번째 노드 ID 가져오기 (최적화된 쿼리)
-    first_node_ids = filtered_queryset.values('cluster_name').annotate(
-        first_id=Min('id')
-    ).values_list('first_id', flat=True)
+    # cluster_name별로 그룹화하여 첫 번째 노드만 가져오기
+    # Python 레벨에서 cluster_name 정규화 후 그룹화
+    all_nodes = list(filtered_queryset.select_related('customer', 'product'))
     
-    # 첫 번째 노드들만 한 번에 가져오기
+    # cluster_name 정규화 및 그룹화
+    cluster_groups = defaultdict(list)
+    for node in all_nodes:
+        # cluster_name 정규화 (공백 제거, None 처리, 대소문자 통일)
+        cluster_name = (node.cluster_name or '').strip() if node.cluster_name else ''
+        cluster_groups[cluster_name].append(node)
+    
+    # 각 클러스터의 첫 번째 노드 선택 및 집계 데이터 계산
+    cluster_data = {}
+    first_node_ids = []
+    
+    for cluster_name, nodes in cluster_groups.items():
+        # 첫 번째 노드 선택 (ID가 가장 작은 것)
+        first_node = min(nodes, key=lambda x: x.id)
+        first_node_ids.append(first_node.id)
+        
+        # 집계 데이터 계산
+        model_names = set()
+        serial_numbers = set()
+        device_count = len(nodes)
+        
+        for node in nodes:
+            if node.product and node.product.model_name:
+                model_names.add(node.product.model_name)
+            if node.serial_number_1 and node.serial_number_1.strip():
+                serial_numbers.add(node.serial_number_1.strip())
+            if node.serial_number_2 and node.serial_number_2.strip():
+                serial_numbers.add(node.serial_number_2.strip())
+        
+        cluster_data[cluster_name] = {
+            'first_node': first_node,
+            'model_names': sorted(list(model_names)),
+            'serial_numbers': sorted(list(serial_numbers)),
+            'device_count': device_count
+        }
+    
+    # 첫 번째 노드들만 가져오기
     first_nodes = filtered_queryset.filter(id__in=first_node_ids).select_related('customer', 'product')
-    
-    # 각 cluster_name의 모든 노드 데이터를 한 번에 가져오기 (집계용)
-    cluster_data = defaultdict(lambda: {
-        'model_names': set(),
-        'serial_numbers': set(),
-        'device_count': 0
-    })
-    
-    # 모든 노드의 필요한 데이터만 한 번에 가져오기
-    all_cluster_data = filtered_queryset.values('cluster_name', 'product__model_name', 'serial_number_1', 'serial_number_2')
-    
-    for item in all_cluster_data:
-        cluster_name = item['cluster_name']
-        cluster_data[cluster_name]['device_count'] += 1
-        if item['product__model_name']:
-            cluster_data[cluster_name]['model_names'].add(item['product__model_name'])
-        if item['serial_number_1'] and item['serial_number_1'].strip():
-            cluster_data[cluster_name]['serial_numbers'].add(item['serial_number_1'])
-        if item['serial_number_2'] and item['serial_number_2'].strip():
-            cluster_data[cluster_name]['serial_numbers'].add(item['serial_number_2'])
     
     # 첫 번째 노드에 집계 데이터 추가
     object_list = []
     for node in first_nodes:
-        cluster_name = node.cluster_name
-        data = cluster_data.get(cluster_name, {'model_names': set(), 'serial_numbers': set(), 'device_count': 0})
+        # cluster_name 정규화 (공백 제거, None 처리)
+        cluster_name = (node.cluster_name or '').strip() if node.cluster_name else ''
+        data = cluster_data.get(cluster_name, {'model_names': [], 'serial_numbers': [], 'device_count': 0})
         node_count = data['device_count'] * 2
-        model_names = sorted(list(data['model_names']))
-        serial_numbers = sorted(list(data['serial_numbers']))
         
         setattr(node, 'cluster_node_count', node_count)
         setattr(node, 'is_multi_node', node_count >= 4)
-        setattr(node, 'cluster_model_names', model_names)
-        setattr(node, 'cluster_serial_numbers', serial_numbers)
+        setattr(node, 'cluster_model_names', data['model_names'])
+        setattr(node, 'cluster_serial_numbers', data['serial_numbers'])
         object_list.append(node)
 
     # 정렬 파라미터 처리
@@ -268,6 +284,28 @@ def get_image_url(request):
         return JsonResponse({'url': None})
 
 
+@login_required
+@require_http_methods(["POST"])
+@csrf_exempt
+def update_avatar(request):
+    """사용자 아바타 시드 업데이트"""
+    try:
+        data = json.loads(request.body)
+        seed = data.get('seed', '').strip()
+        
+        if not seed:
+            return JsonResponse({'success': False, 'error': '시드 값이 필요합니다.'}, status=400)
+        
+        # UserProfile 가져오기 또는 생성
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        profile.avatar_seed = seed
+        profile.save()
+        
+        return JsonResponse({'success': True, 'avatar_url': profile.get_avatar_url()})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
 def get_available_node_numbers(request):
     """클러스터 이름으로 사용 가능한 노드 번호 조회"""
     cluster_name = request.GET.get('cluster_name', '').strip()
@@ -317,35 +355,46 @@ def installbase_detail(request, pk):
             'customer', 'product', 'cluster_switch', 
             'cluster_switch__switch_model_1', 'cluster_switch__switch_model_2',
             'fabric_pool_switch', 'fabric_pool_switch__switch_model_1', 'fabric_pool_switch__switch_model_2'
-        ).prefetch_related('assigned_engineers'),
+        ).prefetch_related('assigned_engineers', 'assigned_engineers__profile'),
         pk=pk
     )
     
     # 같은 cluster_name을 가진 모든 노드들 가져오기 (삭제되지 않은 것만)
     # cluster_name이 빈 문자열이거나 None인 경우를 처리
     if installbase.cluster_name:
-        # DB에서 정렬하도록 최적화 (Python 정렬보다 빠름)
+        # cluster_name 정규화 (공백 제거)
+        normalized_cluster_name = installbase.cluster_name.strip()
+        
+        # 먼저 넓은 범위로 가져온 후 Python 레벨에서 정규화하여 필터링
+        # cluster_name이 비슷한 것들을 모두 가져오기 (icontains 사용)
         from django.db.models import Case, When, IntegerField
-        all_cluster_nodes = InstallBase.objects.filter(
-            cluster_name=installbase.cluster_name,
-            deleted_at__isnull=True
+        candidate_nodes = InstallBase.objects.filter(
+            deleted_at__isnull=True,
+            cluster_name__icontains=normalized_cluster_name
         ).select_related(
             'product', 'customer', 'cluster_switch', 
             'cluster_switch__switch_model_1', 'cluster_switch__switch_model_2',
             'fabric_pool_switch', 'fabric_pool_switch__switch_model_1', 'fabric_pool_switch__switch_model_2'
-        ).prefetch_related('assigned_engineers').annotate(
-            # node_number_1이 None인 경우 999로 처리하여 뒤로 보냄
-            sort_node_1=Case(
-                When(node_number_1__isnull=True, then=999),
-                default='node_number_1',
-                output_field=IntegerField()
-            ),
-            sort_node_2=Case(
-                When(node_number_2__isnull=True, then=999),
-                default='node_number_2',
-                output_field=IntegerField()
-            )
-        ).order_by('sort_node_1', 'sort_node_2', 'id')
+        ).prefetch_related('assigned_engineers', 'assigned_engineers__profile')
+        
+        # Python 레벨에서 cluster_name 정규화 후 정확히 일치하는 것만 필터링
+        all_cluster_nodes = []
+        for node in candidate_nodes:
+            node_normalized = (node.cluster_name or '').strip() if node.cluster_name else ''
+            if node_normalized == normalized_cluster_name:
+                all_cluster_nodes.append(node)
+        
+        # 정규화된 노드가 없으면 현재 노드만 사용
+        if not all_cluster_nodes:
+            all_cluster_nodes = [installbase]
+        else:
+            # node_number로 정렬
+            from django.db.models import Case, When, IntegerField
+            all_cluster_nodes.sort(key=lambda x: (
+                x.node_number_1 if x.node_number_1 is not None else 999,
+                x.node_number_2 if x.node_number_2 is not None else 999,
+                x.id
+            ))
     else:
         # cluster_name이 없는 경우 현재 노드만
         all_cluster_nodes = [installbase]
@@ -353,9 +402,11 @@ def installbase_detail(request, pk):
     # 멀티노드 여부 판단 (4노드 이상 = 2개 이상의 InstallBase 레코드)
     # QuerySet인 경우 count() 사용 (더 효율적)
     if isinstance(all_cluster_nodes, list):
-        is_multi_node = len(all_cluster_nodes) >= 2
+        cluster_node_count = len(all_cluster_nodes)
+        is_multi_node = cluster_node_count >= 2
     else:
-        is_multi_node = all_cluster_nodes.count() >= 2
+        cluster_node_count = all_cluster_nodes.count()
+        is_multi_node = cluster_node_count >= 2
     
     # 증설 이력 가져오기 (최적화: select_related 사용)
     if is_multi_node and installbase.cluster_name:
@@ -401,6 +452,7 @@ def installbase_detail(request, pk):
                 'product_image_url': product_image_url,
                 'ontap_version': node.ontap_version or '',
                 'license_type': node.license_type or '',
+                'service_name': node.service_name or '',
                 'service_level': node.service_level or '',
                 'service_level_display': node.get_service_level_display(),
                 'periodic_inspection': node.periodic_inspection or '',
@@ -451,7 +503,15 @@ def installbase_detail(request, pk):
                 'contract_end_date': node.contract_end_date.strftime('%Y-%m-%d') if node.contract_end_date else '',
                 'maintenance_start': node.maintenance_start.strftime('%Y-%m-%d') if node.maintenance_start else '',
                 'maintenance_end': node.maintenance_end.strftime('%Y-%m-%d') if node.maintenance_end else '',
-                'assigned_engineers': [{'username': e.username, 'last_name': e.last_name or '', 'first_name': e.first_name or ''} for e in node.assigned_engineers.all()],
+                'assigned_engineers': [
+                    {
+                        'username': e.username, 
+                        'last_name': e.last_name or '', 
+                        'first_name': e.first_name or '',
+                        'avatar_seed': getattr(e.profile, 'avatar_seed', None) or e.username if hasattr(e, 'profile') and e.profile else e.username,
+                        'rank_data': e.profile.get_rank_data() if hasattr(e, 'profile') and e.profile else {'border_color': '#e2e8f0', 'glow_opacity': '0', 'glow_color': '', 'animation': '', 'badge': ''}
+                    } for e in node.assigned_engineers.all()
+                ],
             })
     
     context = {
@@ -460,6 +520,7 @@ def installbase_detail(request, pk):
         'cluster_members': cluster_members,  # 다른 노드들 (기존 호환성)
         'all_cluster_nodes': all_cluster_nodes,  # 모든 노드 (현재 노드 포함)
         'is_multi_node': is_multi_node,
+        'cluster_node_count': cluster_node_count,  # 클러스터 노드 개수
         'total_node_count': total_node_count,  # 총 노드 수
         'nodes_data_json': json.dumps(nodes_data),  # JSON 데이터
     }
@@ -782,7 +843,7 @@ def clusterswitch_list(request):
     
     # 정렬 처리
     sort_col = request.GET.get('sort_col')
-    sort_order = request.GET.get('sort_order', 'desc')
+    sort_order = request.GET.get('sort_order', 'asc')
     
     if sort_col:
         try:
@@ -1097,6 +1158,8 @@ def issue_list(request):
             Q(case_number__icontains=query) |
             Q(target_cluster__cluster_name__icontains=query) |
             Q(target_node__cluster_name__icontains=query) |
+            Q(target_node__serial_number_1__icontains=query) |
+            Q(target_node__serial_number_2__icontains=query) |
             Q(status__icontains=query)
         )
     else:
@@ -1104,7 +1167,7 @@ def issue_list(request):
     
     # 정렬 처리
     sort_col = request.GET.get('sort_col')
-    sort_order = request.GET.get('sort_order', 'desc')
+    sort_order = request.GET.get('sort_order', 'asc')
     
     if sort_col:
         try:
@@ -1126,14 +1189,17 @@ def issue_list(request):
         except (ValueError, TypeError):
             issues = issues.order_by('-issue_date')
         # 정렬이 지정된 경우에도 미완료 건을 먼저 표시
+        # 하지만 최근 발생일자 순을 유지하기 위해 issue_date 기준으로 추가 정렬
+        issues = issues.order_by('-issue_date')
         issues_list = list(issues)
         incomplete = []
         complete = []
         for issue in issues_list:
-            if issue.status != 'closed':
+            if issue.status != '종료':
                 incomplete.append(issue)
             else:
                 complete.append(issue)
+        # 각 그룹 내에서 최근 발생일자 순 유지 (이미 정렬되어 있음)
         issues_list = incomplete + complete
         # QuerySet으로 다시 변환할 수 없으므로 리스트로 처리
         from django.core.paginator import Paginator as ListPaginator
@@ -1141,19 +1207,18 @@ def issue_list(request):
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
     else:
-        # 기본 정렬: 완료되지 않은 케이스(status != 'closed')를 먼저, 그 다음 완료된 케이스
-        # 완료되지 않은 케이스는 발생일자 오래된 순, 완료된 케이스도 발생일자 오래된 순
+        # 기본 정렬: 완료되지 않은 케이스(status != '종료')를 먼저, 그 다음 완료된 케이스
+        # 최근 발생일자 순으로 정렬 (내림차순)
+        issues = issues.order_by('-issue_date')
         issues_list = list(issues)
         incomplete = []
         complete = []
         for issue in issues_list:
-            if issue.status != 'closed':
+            if issue.status != '종료':
                 incomplete.append(issue)
             else:
                 complete.append(issue)
-        # 발생일자 오래된 순으로 정렬 (None은 맨 뒤로) - 오름차순
-        incomplete.sort(key=lambda x: (x.issue_date is None, x.issue_date or datetime.max))
-        complete.sort(key=lambda x: (x.issue_date is None, x.issue_date or datetime.max))
+        # 최근 발생일자 순으로 정렬 (이미 issue_date 내림차순으로 정렬되어 있음)
         # 완료/미완료 구분선 추가
         if incomplete and complete:
             incomplete[-1].show_divider = True
@@ -1207,9 +1272,10 @@ def issue_deleted_list(request):
 def issue_create(request):
     """이슈 신규 등록"""
     target_node_id = request.GET.get('target_node', None)
+    target_cluster_id = request.GET.get('target_cluster', None)
     
     if request.method == "POST":
-        form = IssueForm(request.POST, target_node_id=target_node_id)
+        form = IssueForm(request.POST, target_node_id=target_node_id, target_cluster_id=target_cluster_id)
         if form.is_valid():
             obj = form.save(commit=False)
             # target_node_number 저장
@@ -1234,7 +1300,7 @@ def issue_create(request):
             obj.save()
             return redirect('issue_list')
     else:
-        form = IssueForm(target_node_id=target_node_id)
+        form = IssueForm(target_node_id=target_node_id, target_cluster_id=target_cluster_id)
         # 엔지니어 이름을 성+이름으로 표시하도록 수정 (활성화된 유저만)
         User = get_user_model()
         form.fields['assigned_engineer'].choices = [
@@ -1249,7 +1315,10 @@ def issue_create(request):
 @login_required
 def issue_detail(request, pk):
     """이슈 상세"""
-    issue = get_object_or_404(Issue, pk=pk)
+    issue = get_object_or_404(
+        Issue.objects.select_related('assigned_engineer', 'assigned_engineer__profile'),
+        pk=pk
+    )
     rmas = RMA.objects.filter(case_number=issue, deleted_at__isnull=True).order_by('-created_at')
     
     return render(request, 'issue_detail.html', {
@@ -1348,7 +1417,7 @@ def issue_complete(request, pk):
         end_date = request.POST.get('end_date')
         if end_date:
             issue.end_date = end_date
-            issue.status = 'closed'
+            issue.status = '종료'
         issue.save()
         return redirect('issue_list')
 
@@ -1441,7 +1510,7 @@ def rma_list(request):
     
     # 정렬 처리
     sort_col = request.GET.get('sort_col')
-    sort_order = request.GET.get('sort_order', 'desc')
+    sort_order = request.GET.get('sort_order', 'asc')
     
     if sort_col:
         try:
@@ -1461,6 +1530,8 @@ def rma_list(request):
         except (ValueError, TypeError):
             rmas = rmas.order_by('-created_at')
         # 정렬이 지정된 경우에도 미완료 건을 먼저 표시
+        # 하지만 최근 일자 순을 유지하기 위해 created_at 기준으로 추가 정렬
+        rmas = rmas.order_by('-created_at')
         rmas_list = list(rmas)
         incomplete = []
         complete = []
@@ -1469,7 +1540,21 @@ def rma_list(request):
                 incomplete.append(rma)
             else:
                 complete.append(rma)
+        # 각 그룹 내에서 최근 일자 순 유지 (이미 정렬되어 있음)
         rmas_list = incomplete + complete
+        
+        # 연속된 같은 클러스터 이름 중복 제거
+        prev_cluster_name = None
+        for rma in rmas_list:
+            current_cluster_name = None
+            if rma.case_number and rma.case_number.target_cluster:
+                current_cluster_name = rma.case_number.target_cluster.cluster_name
+            if current_cluster_name and current_cluster_name == prev_cluster_name:
+                setattr(rma, 'show_cluster_name', False)
+            else:
+                setattr(rma, 'show_cluster_name', True)
+            prev_cluster_name = current_cluster_name
+        
         # QuerySet으로 다시 변환할 수 없으므로 리스트로 처리
         from django.core.paginator import Paginator as ListPaginator
         paginator = ListPaginator(rmas_list, 10)
@@ -1477,7 +1562,8 @@ def rma_list(request):
         page_obj = paginator.get_page(page_number)
     else:
         # 기본 정렬: 완료되지 않은 건(미반납 또는 배송 미완료)을 먼저, 그 다음 완료된 건
-        # 완료되지 않은 건은 배송일자 빠른 순, 완료된 건도 배송일자 빠른 순
+        # 최근 일자(created_at) 기준 내림차순 정렬
+        rmas = rmas.order_by('-created_at')
         rmas_list = list(rmas)
         incomplete = []
         complete = []
@@ -1486,9 +1572,7 @@ def rma_list(request):
                 incomplete.append(rma)
             else:
                 complete.append(rma)
-        # 배송일자 빠른 순으로 정렬 (None은 맨 뒤로) - 오름차순
-        incomplete.sort(key=lambda x: (x.delivery_date is None, x.delivery_date or datetime.max))
-        complete.sort(key=lambda x: (x.delivery_date is None, x.delivery_date or datetime.max))
+        # 최근 일자 순으로 정렬 (이미 created_at 내림차순으로 정렬되어 있음)
         # 완료/미완료 구분선 추가
         if incomplete and complete:
             incomplete[-1].show_divider = True
@@ -1635,6 +1719,11 @@ def rma_update(request, pk):
             # disabled 필드는 POST에 포함되지 않으므로 원래 값으로 복원
             obj = form.save(commit=False)
             obj.case_number = rma.case_number
+            
+            # return_required가 'not_required'이면 return_status도 'not_required'로 설정
+            if obj.return_required == 'not_required':
+                obj.return_status = 'not_required'
+            
             obj.save()
             return redirect('rma_list')
         else:
@@ -1994,6 +2083,26 @@ def get_node_info_ajax(request):
         return JsonResponse({'node': None})
 
 @login_required
+def get_cluster_info_ajax(request):
+    """클러스터 정보 조회 (AJAX)"""
+    cluster_id = request.GET.get('cluster_id')
+    
+    if not cluster_id:
+        return JsonResponse({'cluster': None})
+    
+    try:
+        cluster = InstallBase.objects.get(pk=cluster_id, deleted_at__isnull=True)
+        
+        return JsonResponse({
+            'cluster': {
+                'id': cluster.id,
+                'cluster_name': cluster.cluster_name or ''
+            }
+        })
+    except InstallBase.DoesNotExist:
+        return JsonResponse({'cluster': None})
+
+@login_required
 def get_cases_ajax(request):
     """케이스 번호 검색 (AJAX) - 진행중인 케이스만, 페이지네이션"""
     query = request.GET.get('q', '').strip()
@@ -2001,8 +2110,8 @@ def get_cases_ajax(request):
     page = int(request.GET.get('page', 1))
     per_page = 20  # 페이지당 항목 수
     
-    # 진행중인 케이스만 필터링 (closed가 아닌 것들)
-    base_queryset = Issue.objects.filter(deleted_at__isnull=True).exclude(status='closed').select_related(
+    # 진행중인 케이스만 필터링 (종료가 아닌 것들)
+    base_queryset = Issue.objects.filter(deleted_at__isnull=True).exclude(status='종료').select_related(
         'target_cluster', 'target_node'
     )
     

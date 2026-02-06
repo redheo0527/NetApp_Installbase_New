@@ -50,7 +50,18 @@
         <div class="flex gap-3 animate-slide-up">
             <a href="{% url 'installbase_list' %}" class="px-6 py-3 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition text-sm">목록으로</a>
             {% if not is_multi_node %}
+            {% if installbase.deleted_at %}
+            <form method="POST" action="{% url 'installbase_restore' installbase.pk %}" class="inline" onsubmit="return confirm('이 장비의 삭제를 취소하시겠습니까?');">
+                {% csrf_token %}
+                <button type="submit" class="px-6 py-3 bg-green-500 text-white rounded-2xl font-bold shadow-lg shadow-green-100 hover:translate-y-[-2px] transition text-sm text-center hover:bg-green-600">삭제 취소</button>
+            </form>
+            {% else %}
             <a href="{% url 'installbase_update' installbase.pk %}" class="px-6 py-3 bg-[#0067B3] text-white rounded-2xl font-bold shadow-lg shadow-blue-100 hover:translate-y-[-2px] transition text-sm text-center">정보 수정</a>
+            <form method="POST" action="{% url 'installbase_delete' installbase.pk %}" class="inline" onsubmit="return confirm('정말로 이 장비를 삭제하시겠습니까?');">
+                {% csrf_token %}
+                <button type="submit" class="px-6 py-3 bg-red-500 text-white rounded-2xl font-bold shadow-lg shadow-red-100 hover:translate-y-[-2px] transition text-sm text-center hover:bg-red-600">장비 삭제</button>
+            </form>
+            {% endif %}
             {% endif %}
         </div>
     </div>
@@ -145,9 +156,12 @@
         <div class="lg:col-span-2 space-y-8 animate-slide-up" style="animation-delay: 0.1s;">
 
             <div class="info-card flex flex-col md:flex-row gap-10 items-center overflow-hidden">
-                <div class="w-full md:w-1/3 flex justify-center">
+                <div class="w-full md:w-1/3 flex flex-col items-center gap-4">
                     {% if installbase.product.image %}<img src="{{ installbase.product.image.url }}" class="w-full max-w-[240px] drop-shadow-2xl">
                     {% else %}<div class="w-48 h-48 bg-gray-50 rounded-3xl flex items-center justify-center"><i class="fa-solid fa-box text-gray-200 text-6xl"></i></div>{% endif %}
+                    <div class="text-center">
+                        <p class="text-sm font-bold text-gray-700">{{ installbase.product.model_name }}</p>
+                    </div>
                 </div>
                 <div class="flex-1 space-y-6">
                     <div class="grid grid-cols-2 gap-4">
@@ -158,6 +172,10 @@
                         <div>
                             <p class="label-text">License Type</p>
                             <p class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 uppercase italic">{{ installbase.license_type|default:"BASE" }}</p>
+                        </div>
+                        <div>
+                            <p class="label-text">Service Name</p>
+                            <p class="value-text">{{ installbase.service_name|default:"-" }}</p>
                         </div>
                         <div>
                             <p class="label-text">Periodic Inspection</p>
@@ -400,6 +418,18 @@
                     <p class="text-sm text-gray-400 italic">등록된 타임라인 정보가 없습니다.</p>
                     {% endif %}
                 </div>
+                <div class="mt-6 pt-6 border-t border-blue-200">
+                    <div class="flex gap-3">
+                        <a href="{% url 'issue_create' %}?target_cluster={{ installbase.pk }}" 
+                           class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition text-sm text-center">
+                            <i class="fa-solid fa-plus mr-2"></i>이슈 등록
+                        </a>
+                        <a href="{% url 'issue_list' %}?q={% if installbase.serial_number_1 %}{{ installbase.serial_number_1 }}{% elif installbase.serial_number_2 %}{{ installbase.serial_number_2 }}{% endif %}" 
+                           class="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition text-sm text-center">
+                            <i class="fa-solid fa-search mr-2"></i>이슈 조회
+                        </a>
+                    </div>
+                </div>
             </div>
 
             <div class="info-card">
@@ -407,7 +437,36 @@
                 <div class="flex flex-wrap gap-2">
                     {% for engineer in installbase.assigned_engineers.all %}
                         <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
-                            <div class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold">{{ engineer.username|slice:":1"|upper }}</div>
+                            {% with engineer_profile=engineer.profile|default:None %}
+                            {% if engineer_profile %}
+                                {% with rank_data=engineer_profile.get_rank_data %}
+                                <div class="avatar-container relative">
+                                    {% if engineer_profile.avatar_seed %}
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ engineer_profile.avatar_seed }}" 
+                                             alt="Avatar" 
+                                             class="w-8 h-8 rounded-xl border-2 transition-all shadow-md relative z-10"
+                                             style="border-color: {{ rank_data.border_color }};">
+                                    {% else %}
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ engineer.username }}" 
+                                             alt="Avatar" 
+                                             class="w-8 h-8 rounded-xl border-2 transition-all shadow-md relative z-10"
+                                             style="border-color: {{ rank_data.border_color }};">
+                                    {% endif %}
+                                    {% if rank_data.glow_opacity != '0' %}
+                                    <div class="avatar-glow {{ rank_data.glow_color }} {{ rank_data.animation }}"
+                                         style="opacity: 0.{{ rank_data.glow_opacity }}; filter: blur(4px);"></div>
+                                    {% endif %}
+                                    {% if rank_data.badge %}
+                                    <div class="avatar-badge text-[8px]">{{ rank_data.badge }}</div>
+                                    {% endif %}
+                                </div>
+                                {% endwith %}
+                            {% else %}
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ engineer.username }}" 
+                                     alt="Avatar" 
+                                     class="w-8 h-8 rounded-xl border-2 border-gray-200 transition-all shadow-md">
+                            {% endif %}
+                            {% endwith %}
                             <span class="text-xs font-bold text-gray-700">{{ engineer.last_name }}{{ engineer.first_name }}</span>
                         </div>
                     {% empty %}<p class="text-xs text-gray-400 italic">지정된 엔지니어가 없습니다.</p>{% endfor %}
@@ -478,14 +537,21 @@
             <div id="expansionForm" class="hidden mb-8 p-6 bg-slate-50 rounded-3xl border border-slate-100">
                 <div class="space-y-4">
                     <div class="flex flex-col w-48"><label class="label-text">증설 날짜</label><input type="date" id="expDate" class="p-3 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"></div>
-                    {% if is_multi_node %}
+                    {% if installbase.cluster_name and cluster_node_count > 1 %}
                     <div class="flex flex-col">
                         <label class="label-text">노드 선택</label>
                         <select id="expNodeId" class="p-3 border-none rounded-xl text-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
                             {% for node in all_cluster_nodes %}
                             <option value="{{ node.pk }}" {% if node.pk == installbase.pk %}selected{% endif %}>
-                                {% if node.node_number_1 %}노드{{ node.node_number_1 }}{% elif node.node_number_2 %}노드{{ node.node_number_2 }}{% else %}노드{{ forloop.counter }}{% endif %}
-                                {% if node.node_name_1 %} - {{ node.node_name_1 }}{% elif node.node_name_2 %} - {{ node.node_name_2 }}{% endif %}
+                                {% if node.node_name_1 and node.node_name_2 %}
+                                    {{ node.node_name_1 }} / {{ node.node_name_2 }}
+                                {% elif node.node_name_1 %}
+                                    {{ node.node_name_1 }}
+                                {% elif node.node_name_2 %}
+                                    {{ node.node_name_2 }}
+                                {% else %}
+                                    {% if node.node_number_1 %}노드{{ node.node_number_1 }}{% elif node.node_number_2 %}노드{{ node.node_number_2 }}{% else %}노드{{ forloop.counter }}{% endif %}
+                                {% endif %}
                             </option>
                             {% endfor %}
                         </select>
@@ -497,11 +563,11 @@
             </div>
 
             <div class="overflow-hidden rounded-2xl border border-gray-50">
-                <table class="w-full text-left table-fixed">
+                <table class="w-full text-left">
                     <thead class="bg-gray-50 text-gray-400 uppercase text-[10px] font-black tracking-widest">
                         <tr>
                             <th class="py-4 px-6 w-40">증설 날짜</th>
-                            <th class="py-4 px-6" style="min-width: 44px;">노드</th>
+                            <th class="py-4 px-6" style="width: 1%; white-space: nowrap;">노드</th>
                             <th class="py-4 px-6">증설 상세 내용</th>
                             <th class="py-4 px-6 w-24 text-right">관리</th>
                         </tr>
@@ -510,7 +576,7 @@
                         {% for exp in expansions %}
                         <tr class="history-row group hover:bg-gray-50/50 transition" id="exp-row-{{ exp.id }}">
                             <td class="py-4 px-6 font-bold text-gray-600 exp-date-cell align-top">{{ exp.expansion_date|date:"Y-m-d" }}</td>
-                            <td class="py-4 px-6 text-gray-700 align-top" style="min-width: 44px; white-space: nowrap;">
+                            <td class="py-4 px-6 text-gray-700 align-top" style="width: 1%; white-space: nowrap;">
                                 <div class="flex flex-col gap-1">
                                     {% if exp.install_base.node_name_1 %}
                                     <span class="text-xs font-semibold whitespace-nowrap">{{ exp.install_base.node_name_1 }}</span>
@@ -637,39 +703,55 @@
             `<img src="${node.product_image_url}" class="w-full max-w-[240px] drop-shadow-2xl">` : 
             `<div class="w-48 h-48 bg-gray-50 rounded-3xl flex items-center justify-center"><i class="fa-solid fa-box text-gray-200 text-6xl"></i></div>`;
         
+        // 뱃지 생성
+        const modelName = node.product_model_name || '';
+        let badgeHtml = '';
+        if (modelName.includes('AFF') || modelName.startsWith('A') || modelName.startsWith('C')) {
+            badgeHtml = '<span class="px-1.5 py-0.5 bg-[#0067B3] text-[9px] font-black text-white rounded italic mr-1.5">AFF</span>';
+        } else if (modelName.includes('FAS')) {
+            badgeHtml = '<span class="px-1.5 py-0.5 bg-gray-900 text-[9px] font-black text-white rounded italic mr-1.5">FAS</span>';
+        }
+        
         detailContainer.innerHTML = `
             <div class="info-card flex flex-col gap-8 overflow-hidden">
                 <div class="flex flex-col items-center gap-4">
                     ${productImageHtml}
-                    <p class="text-lg font-bold text-gray-800">${node.product_model_name || '-'}</p>
+                    <div class="flex items-center gap-1.5">
+                        ${badgeHtml}
+                        <p class="text-lg font-bold text-gray-800">${modelName}</p>
+                    </div>
             </div>
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <p class="label-text">ONTAP Version</p>
                             <p class="text-2xl font-black text-gray-800">v${node.ontap_version || '-'}</p>
-        </div>
+                        </div>
                         <div>
                             <p class="label-text">License Type</p>
                             <p class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 uppercase italic">${node.license_type || 'BASE'}</p>
-        </div>
+                        </div>
+                        <div>
+                            <p class="label-text">Service Name</p>
+                            <p class="value-text">${node.service_name || '-'}</p>
+                        </div>
                         <div>
                             <p class="label-text">Service Level</p>
                             <p class="value-text font-bold text-blue-600 flex items-center">${node.service_level_display || '-'} ${serviceLevelStar}</p>
-    </div>
+                        </div>
                         <div>
                             <p class="label-text">Periodic Inspection</p>
                             <p class="value-text flex items-center gap-2">${periodicDot}${node.periodic_inspection_display || '-'}</p>
-</div>
-            </div>
+                        </div>
+                    </div>
                     ${node.project ? `
                     <div>
                         <p class="label-text">Project Name</p>
                         <p class="value-text break-words" style="word-break: break-word; overflow-wrap: break-word;">${node.project}</p>
-        </div>
+                    </div>
                     ` : ''}
-    </div>
-</div>
+                </div>
+            </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="info-card border-l-4 border-l-gray-800">
@@ -757,6 +839,18 @@
                                 </div>
                             `).join('') + '</div>';
                     })()}
+                    <div class="mt-6 pt-6 border-t border-blue-200">
+                        <div class="flex gap-3">
+                            <a href="/issue/create/?target_cluster=${node.pk}" 
+                               class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition text-sm text-center">
+                                <i class="fa-solid fa-plus mr-2"></i>이슈 등록
+                            </a>
+                            <a href="/issue/?q=${node.serial_number_1 || node.serial_number_2 || ''}" 
+                               class="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition text-sm text-center">
+                                <i class="fa-solid fa-search mr-2"></i>이슈 조회
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="info-card">
@@ -765,12 +859,28 @@
                     </h4>
                     <div class="flex flex-wrap gap-2">
                         ${node.assigned_engineers && node.assigned_engineers.length > 0 ? 
-                            node.assigned_engineers.map(e => `
+                            node.assigned_engineers.map(e => {
+                                const avatarSeed = e.avatar_seed || e.username || '';
+                                const rankData = e.rank_data || { border_color: '#e2e8f0', glow_opacity: '0', glow_color: '', animation: '', badge: '' };
+                                return `
                                 <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
-                                    <div class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold">${(e.username || '').charAt(0).toUpperCase()}</div>
+                                    <div class="avatar-container relative">
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}" 
+                                             alt="Avatar" 
+                                             class="w-8 h-8 rounded-xl border-2 transition-all shadow-md relative z-10"
+                                             style="border-color: ${rankData.border_color || '#e2e8f0'};">
+                                        ${rankData.glow_opacity && rankData.glow_opacity != '0' ? `
+                                        <div class="avatar-glow ${rankData.glow_color || ''} ${rankData.animation || ''}"
+                                             style="opacity: 0.${rankData.glow_opacity}; filter: blur(4px);"></div>
+                                        ` : ''}
+                                        ${rankData.badge ? `
+                                        <div class="avatar-badge text-[8px]">${rankData.badge}</div>
+                                        ` : ''}
+                                    </div>
                                     <span class="text-xs font-bold text-gray-700">${e.last_name || ''}${e.first_name || ''}</span>
                                 </div>
-                            `).join('') : 
+                            `;
+                            }).join('') : 
                             '<p class="text-xs text-gray-400 italic">지정된 엔지니어가 없습니다.</p>'
                         }
                     </div>
@@ -786,6 +896,27 @@
                     <div class="text-sm text-gray-700 leading-relaxed pre-wrap font-medium">${node.controller_slots || '등록된 상세 슬롯 정보가 없습니다.'}</div>
             </div>
         </div>
+            
+            <div class="info-card">
+                <h4 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-microchip text-cyan-500"></i> Technical Specifications
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div>
+                        <p class="label-text">Install Country</p>
+                        <p class="value-text flex items-center gap-2">
+                            <span class="inline-block w-5 h-3 overflow-hidden rounded-sm bg-gray-50"></span>
+                            ${node.country_display || '-'}
+                        </p>
+                    </div>
+                    <div><p class="label-text">Location / Rack</p><p class="value-text">${node.location || '-'} / ${node.rack_space || '-'}</p></div>
+                    <div><p class="label-text">Shelf Models</p><p class="value-text">${node.shelf_models || '-'}</p></div>
+                    <div class="md:col-span-3 pt-6 border-t border-gray-50">
+                        <p class="label-text">Disk Configuration</p>
+                        <p class="value-text text-sm leading-relaxed">${(node.disk_info || '-').replace(/\n/g, '<br>')}</p>
+                    </div>
+                </div>
+            </div>
             
             <div class="info-card">
                 <div class="flex justify-between items-start mb-8">
@@ -1021,7 +1152,8 @@
         {% endif %}
         
         window.submitExpansion = function() {
-            const date = document.getElementById('expDate').value;
+            const dateRaw = document.getElementById('expDate').value;
+            const date = dateRaw ? dateRaw.slice(0, 10) : '';
             const description = document.getElementById('expDesc').value;
             if (!date || !description) return;
             const nodeId = document.getElementById('expNodeId') ? document.getElementById('expNodeId').value : null;
@@ -1032,6 +1164,10 @@
                 body: bodyParams
             }).then(res => res.json()).then(data => { if(data.status === 'success') location.reload(); });
         };
+        let editingExpansionId = null;
+        let originalDate = '';
+        let originalDesc = '';
+        
         window.enableEdit = function(id) {
             const row = document.getElementById(`exp-row-${id}`);
             const dateCell = row.querySelector('.exp-date-cell');
@@ -1039,18 +1175,79 @@
             const actionCell = row.querySelector('td:last-child');
             const oldDate = dateCell.innerText.trim();
             const oldDesc = descCell.innerText.trim();
+            
+            // 원본 값 저장
+            editingExpansionId = id;
+            originalDate = oldDate;
+            originalDesc = oldDesc;
+            
             dateCell.innerHTML = `<input type="date" id="edit-date-${id}" value="${oldDate}" class="w-full p-2 text-xs border rounded-lg">`;
             descCell.innerHTML = `<textarea id="edit-desc-${id}" rows="3" class="w-full p-2 text-xs border rounded-lg resize-none">${oldDesc}</textarea>`;
-            actionCell.innerHTML = `<button onclick="saveEdit('${id}')" class="text-green-600 font-bold text-xs uppercase">Save</button>`;
+            actionCell.innerHTML = `
+                <div class="flex flex-col gap-1 items-end">
+                    <button onclick="saveEdit('${id}')" class="text-green-600 font-bold text-xs uppercase hover:text-green-700">Save</button>
+                    <button onclick="cancelEdit('${id}')" class="text-gray-500 font-bold text-xs uppercase hover:text-gray-700">취소</button>
+                </div>
+            `;
         };
+        
+        window.cancelEdit = function(id) {
+            const row = document.getElementById(`exp-row-${id}`);
+            const dateCell = row.querySelector('.exp-date-cell');
+            const descCell = row.querySelector('.exp-desc-cell');
+            const actionCell = row.querySelector('td:last-child');
+            
+            // 원본 값으로 복원
+            dateCell.innerHTML = originalDate;
+            descCell.className = 'py-4 px-6 text-gray-700 exp-desc-cell pre-wrap align-top break-words';
+            descCell.innerHTML = originalDesc.replace(/\n/g, '<br>');
+            actionCell.innerHTML = `<button onclick="enableEdit('${id}')" class="text-blue-500 font-bold text-xs uppercase">Edit</button>`;
+            
+            editingExpansionId = null;
+            originalDate = '';
+            originalDesc = '';
+        };
+        
         window.saveEdit = function(id) {
-            const newDate = document.getElementById(`edit-date-${id}`).value;
+            const newDateRaw = document.getElementById(`edit-date-${id}`).value;
+            const newDate = newDateRaw ? newDateRaw.slice(0, 10) : '';
             const newDesc = document.getElementById(`edit-desc-${id}`).value;
+            
+            if (!newDate || !newDesc) {
+                alert('날짜와 내용을 모두 입력해주세요.');
+                return;
+            }
+            
             fetch(`/ajax/edit-expansion/${id}/`, {
                 method: "POST",
                 headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/x-www-form-urlencoded" },
                 body: `date=${encodeURIComponent(newDate)}&description=${encodeURIComponent(newDesc)}`
-            }).then(res => res.json()).then(data => { if(data.status === 'success') location.reload(); });
+            }).then(res => res.json()).then(data => {
+                if(data.status === 'success') {
+                    // 페이지 새로고침 대신 DOM 직접 업데이트
+                    const row = document.getElementById(`exp-row-${id}`);
+                    const dateCell = row.querySelector('.exp-date-cell');
+                    const descCell = row.querySelector('.exp-desc-cell');
+                    const actionCell = row.querySelector('td:last-child');
+                    
+                    // 날짜 포맷팅 (Y-m-d 형식 유지)
+                    const formattedDate = newDate;
+                    
+                    dateCell.innerHTML = formattedDate;
+                    descCell.className = 'py-4 px-6 text-gray-700 exp-desc-cell pre-wrap align-top break-words';
+                    descCell.innerHTML = newDesc.replace(/\n/g, '<br>');
+                    actionCell.innerHTML = `<button onclick="enableEdit('${id}')" class="text-blue-500 font-bold text-xs uppercase">Edit</button>`;
+                    
+                    editingExpansionId = null;
+                    originalDate = '';
+                    originalDesc = '';
+                } else {
+                    alert('저장에 실패했습니다. 다시 시도해주세요.');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('저장 중 오류가 발생했습니다.');
+            });
         };
     });
 </script>

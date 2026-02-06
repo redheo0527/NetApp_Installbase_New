@@ -59,14 +59,6 @@
     .issue-row-active td:first-child {
         border-left: 4px solid #f97316 !important;
     }
-    .divider-row {
-        background-color: #f3f4f6;
-        height: 3px;
-    }
-    .divider-row td {
-        padding: 0;
-        border: none;
-    }
     .main-row { border-bottom: 1px solid #e2e8f0 !important; }
     .main-row:last-child { border-bottom: none !important; }
 </style>
@@ -177,11 +169,6 @@
                 </thead>
                 <tbody>
                     {% for issue in issues %}
-                    {% if issue.show_divider %}
-                    <tr class="divider-row">
-                        <td colspan="6"></td>
-                    </tr>
-                    {% endif %}
                     <tr class="hover:bg-blue-50/20 transition-colors group main-row {% if issue.status == '진행중' %}issue-row-active{% endif %}">
                         <td class="px-4 py-3 text-center" {% if issue.status == '진행중' %}style="border-left: 4px solid #f97316 !important;"{% endif %}>
                             <div class="flex flex-col items-center gap-1.5">

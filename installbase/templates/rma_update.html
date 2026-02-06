@@ -115,7 +115,7 @@
                     <select id="id_return_status" name="return_status" class="w-full p-4 rounded-2xl border-gray-100 bg-gray-50 focus:ring-2 focus:ring-[#0067B3] focus:bg-white transition-all text-sm">
                         <option value="not_returned" {% if rma.return_status == 'not_returned' %}selected{% endif %}>미반납</option>
                         <option value="returned" {% if rma.return_status == 'returned' %}selected{% endif %}>반납</option>
-                        <option value="not_required" id="not_required_option" style="display:none;" {% if rma.return_status == 'not_required' %}selected{% endif %}>반납 불필요</option>
+                        <option value="not_required" id="not_required_option" {% if rma.return_status == 'not_required' or rma.return_required == 'not_required' %}selected{% endif %}>반납 불필요</option>
                     </select>
                 </div>
             </div>
@@ -146,6 +146,13 @@
         
         // 초기 상태 확인
         checkReturnStatus();
+        
+        // 반납 필요 여부 변경 시 이벤트 리스너
+        if (returnRequiredSelect) {
+            returnRequiredSelect.addEventListener('change', function() {
+                checkReturnStatus();
+            });
+        }
         
         // 반납 여부 변경 시 이벤트 리스너
         if (returnStatusSelect) {
@@ -181,7 +188,29 @@
         function checkReturnStatus() {
             if (!returnStatusSelect || !returnRequiredSelect) return;
             
+            const returnRequired = returnRequiredSelect.value;
             const returnStatus = returnStatusSelect.value;
+            
+            if (returnRequired === 'not_required') {
+                // 반납 필요 여부가 "반납 불필요"인 경우
+                // return_status도 "반납 불필요"로 설정하고 표시
+                const notRequiredOption = returnStatusSelect.querySelector('option[value="not_required"]');
+                if (notRequiredOption) {
+                    notRequiredOption.style.display = 'block';
+                }
+                returnStatusSelect.value = 'not_required';
+                returnStatusSelect.disabled = false; // disabled 해제하여 값이 전송되도록
+                returnStatusSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
+            } else {
+                // 반납 필요 여부가 "반납 필요"인 경우
+                if (returnStatus === 'not_required') {
+                    returnStatusSelect.value = 'not_returned';
+                }
+                const notRequiredOption = returnStatusSelect.querySelector('option[value="not_required"]');
+                if (notRequiredOption && !(isDisk && isNRD)) {
+                    notRequiredOption.style.display = 'none';
+                }
+            }
             
             if (returnStatus === 'not_required') {
                 // 반납 여부가 "반납 불필요"인 경우
@@ -190,8 +219,10 @@
                 returnRequiredSelect.classList.add('bg-gray-200', 'cursor-not-allowed');
             } else {
                 // 반납 여부가 "반납 불필요"가 아닌 경우
-                returnRequiredSelect.disabled = false;
-                returnRequiredSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
+                if (returnRequiredSelect.disabled) {
+                    returnRequiredSelect.disabled = false;
+                    returnRequiredSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
+                }
             }
         }
         
@@ -234,10 +265,19 @@
         if (isDisk && isNRD) {
             checkReturnStatusForPart('disk');
         } else {
-            // "반납 불필요" 옵션 숨기기
-            const notRequiredOption = returnStatusSelect.querySelector('option[value="not_required"]');
-            if (notRequiredOption) {
-                notRequiredOption.style.display = 'none';
+            // return_required가 'not_required'인 경우 return_status도 'not_required'로 설정
+            if (returnRequiredSelect && returnRequiredSelect.value === 'not_required') {
+                const notRequiredOption = returnStatusSelect.querySelector('option[value="not_required"]');
+                if (notRequiredOption) {
+                    notRequiredOption.style.display = 'block';
+                }
+                returnStatusSelect.value = 'not_required';
+            } else {
+                // "반납 불필요" 옵션 숨기기
+                const notRequiredOption = returnStatusSelect.querySelector('option[value="not_required"]');
+                if (notRequiredOption) {
+                    notRequiredOption.style.display = 'none';
+                }
             }
         }
     });
@@ -253,6 +293,24 @@
 
     // 필수 필드 검증 (수정 폼용)
     function validateRMAUpdateForm(event) {
+        // 반납 필요 여부가 'not_required'인 경우 return_status를 'not_required'로 설정
+        const returnRequired = document.getElementById('id_return_required');
+        const returnStatus = document.getElementById('id_return_status');
+        
+        if (returnRequired && returnRequired.value === 'not_required') {
+            if (returnStatus) {
+                // return_status를 'not_required'로 설정하고 disabled 해제
+                returnStatus.value = 'not_required';
+                returnStatus.disabled = false;
+                
+                // 기존 hidden input 제거 (중복 방지)
+                const existingHidden = document.querySelector('input[name="return_status"][type="hidden"]');
+                if (existingHidden) {
+                    existingHidden.remove();
+                }
+            }
+        }
+        
         const requiredFields = [
             { id: 'id_rma_number', name: 'RMA 번호' },
             { id: 'id_part', name: '파트 넘버' },

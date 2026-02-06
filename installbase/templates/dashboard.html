@@ -2,176 +2,545 @@
 {% load static %}
 
 {% block content %}
-<div class="p-8">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-        <p class="text-gray-600">NetApp 인프라 현황을 한눈에 확인하세요</p>
-    </div>
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .card-animate {
+        animation: fadeInUp 0.6s ease-out;
+    }
+</style>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-50">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
-                    <i class="fa-solid fa-check-circle text-xl"></i>
-                </div>
-                <p class="text-sm font-bold text-gray-800">활성 장비</p>
-            </div>
-            <p class="text-2xl font-bold text-gray-800">{{ active_storage_count }} Sets</p>
-        </div>
+<div class="p-12 pt-0 overflow-y-auto">
+    <div class="max-w-7xl mx-auto space-y-12">
         
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-50">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                    <i class="fa-solid fa-server text-xl"></i>
+        <!-- Header -->
+        <header class="h-28 flex items-center justify-between sticky top-0 z-30 bg-pattern pb-8">
+            <div>
+                <h1 class="text-2xl font-black text-[#002d5a] tracking-tighter">Storage Infrastructure Control</h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <div class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping"></div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Installbase Intelligent Monitoring</span>
                 </div>
-                <p class="text-sm font-bold text-gray-800">전체 장비</p>
             </div>
-            <p class="text-2xl font-bold text-gray-800">{{ total_storage_count }} Sets</p>
-        </div>
-        
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-50">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
-                    <i class="fa-solid fa-exclamation-triangle text-xl"></i>
+            
+            <div class="flex items-center gap-3">
+                <div class="relative hidden sm:block">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input 
+                        class="pl-10 pr-4 py-2.5 bg-white/50 backdrop-blur-md border border-white/50 rounded-2xl outline-none focus:ring-2 focus:ring-[#0067b1] w-64 text-sm transition-all"
+                        placeholder="장비 ID 또는 클러스터 검색..."
+                    />
                 </div>
-                <p class="text-sm font-bold text-gray-800">진행 중인 이슈</p>
             </div>
-            <p class="text-2xl font-bold text-gray-800">{{ open_issues_count }} 건</p>
-        </div>
-        
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-50">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center text-red-600">
-                    <i class="fa-solid fa-box text-xl"></i>
-                </div>
-                <p class="text-sm font-bold text-gray-800">미반납 RMA</p>
-            </div>
-            <p class="text-2xl font-bold text-gray-800">{{ not_returned_rma_count }} 건</p>
-        </div>
-    </div>
+        </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-50">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">글로벌 장비 배치 현황</h3>
-            <canvas id="countryChart" width="300" height="300"></canvas>
-        </div>
-        
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-50">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">장비 모델 분포</h3>
-            <canvas id="modelChart" width="300" height="300"></canvas>
-        </div>
-        
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-50">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">고객사별 장비 대수</h3>
-            <canvas id="customerChart" width="300" height="300"></canvas>
-        </div>
-    </div>
-
-    <div class="bg-white rounded-xl shadow-sm border border-gray-50 p-6">
-        <h3 class="text-xl font-semibold text-gray-800 mb-6">최근 1주일 내 발생한 이슈</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {% for issue in recent_issues %}
-            <div class="bg-gray-50 rounded-xl p-5 border border-gray-100 hover:shadow-md transition cursor-pointer" onclick="window.location.href='{% url 'issue_detail' issue.pk %}'">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="flex-1">
-                        <p class="font-bold text-gray-800 text-sm mb-1">{{ issue.title|default:"-" }}</p>
-                        <p class="text-xs text-gray-500">{{ issue.target_cluster.customer.name|default:"-" }} / {{ issue.target_cluster.cluster_name|default:"-" }}</p>
+        <!-- Performance Matrix -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="glass-card p-8 rounded-[2.5rem] card-animate" style="animation-delay: 0.1s">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-[#0067b1]">
+                        <i class="fa-solid fa-check-circle text-xl"></i>
                     </div>
-                    <div class="ml-2">
-                        {% if issue.status == '진행중' %}
-                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold">{{ issue.status }}</span>
-                        {% else %}
-                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold">{{ issue.status }}</span>
-                        {% endif %}
+                    <span class="text-[10px] font-black text-green-500 bg-green-50 px-2 py-1 rounded-lg uppercase tracking-tighter">Active</span>
+                </div>
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">활성 장비</p>
+                <h3 class="text-4xl font-black tracking-tighter text-[#0067b1]">{{ active_storage_count }}<span class="text-lg ml-1 opacity-50">Sets</span></h3>
+            </div>
+
+            <div class="glass-card p-8 rounded-[2.5rem] border-b-4 border-b-[#00d2ff] card-animate" style="animation-delay: 0.2s">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="w-12 h-12 bg-cyan-50 rounded-2xl flex items-center justify-center text-cyan-600">
+                        <i class="fa-solid fa-server text-xl"></i>
                     </div>
+                    <span class="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-1 rounded-lg uppercase tracking-tighter">Total</span>
                 </div>
-                <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
-                    <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold">
-                        {{ issue.get_issue_type_display }}
-                    </span>
-                    <span class="text-xs text-gray-500">{{ issue.issue_date|date:"Y-m-d" }}</span>
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">전체 장비</p>
+                <h3 class="text-4xl font-black tracking-tighter text-slate-800">{{ total_storage_count }}<span class="text-lg ml-1 opacity-50">Sets</span></h3>
+            </div>
+
+            <div class="glass-card p-8 rounded-[2.5rem] border-l-4 border-l-rose-500 bg-rose-50/20 card-animate" style="animation-delay: 0.3s">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center text-rose-600 shadow-inner">
+                        <i class="fa-solid fa-exclamation-triangle text-xl"></i>
+                    </div>
+                    <span class="text-[10px] font-black text-rose-600 bg-rose-100 px-2 py-1 rounded-lg uppercase tracking-tighter">Critical</span>
+                </div>
+                <p class="text-rose-400 text-[10px] font-black uppercase tracking-widest mb-1">진행 중인 이슈</p>
+                <h3 class="text-4xl font-black tracking-tighter text-rose-600">{{ open_issues_count }}<span class="text-lg ml-1 opacity-50">건</span></h3>
+            </div>
+
+            <div class="glass-card p-8 rounded-[2.5rem] card-animate" style="animation-delay: 0.4s">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+                        <i class="fa-solid fa-box text-xl"></i>
+                    </div>
+                    <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg uppercase tracking-tighter">Pending</span>
+                </div>
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">미반납 RMA</p>
+                <h3 class="text-4xl font-black tracking-tighter text-slate-800">{{ not_returned_rma_count }}<span class="text-lg ml-1 opacity-50">건</span></h3>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div class="glass-card p-10 rounded-[3rem] card-animate" style="animation-delay: 0.5s">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-lg font-black text-slate-800 flex items-center gap-3">
+                        <span class="w-1.5 h-6 bg-cyan-400 rounded-full"></span>
+                        글로벌 장비 배치
+                    </h3>
+                    <button class="text-gray-400 hover:text-[#0067b1] transition-colors">
+                        <i class="fa-solid fa-external-link text-sm"></i>
+                    </button>
+                </div>
+                <canvas id="countryChart" width="300" height="300"></canvas>
+            </div>
+            
+            <div class="glass-card p-10 rounded-[3rem] card-animate" style="animation-delay: 0.6s">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-lg font-black text-slate-800 flex items-center gap-3">
+                        <span class="w-1.5 h-6 bg-indigo-400 rounded-full"></span>
+                        장비 모델 분포
+                    </h3>
+                    <button class="text-gray-400 hover:text-[#0067b1] transition-colors">
+                        <i class="fa-solid fa-external-link text-sm"></i>
+                    </button>
+                </div>
+                <canvas id="modelChart" width="300" height="300"></canvas>
+            </div>
+            
+            <div class="glass-card p-10 rounded-[3rem] card-animate" style="animation-delay: 0.7s">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-lg font-black text-slate-800 flex items-center gap-3">
+                        <span class="w-1.5 h-6 bg-blue-400 rounded-full"></span>
+                        고객사별 비중
+                    </h3>
+                    <button class="text-gray-400 hover:text-[#0067b1] transition-colors">
+                        <i class="fa-solid fa-external-link text-sm"></i>
+                    </button>
+                </div>
+                <canvas id="customerChart" width="300" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Issues Section -->
+        <div class="glass-card rounded-[3rem] overflow-hidden card-animate" style="animation-delay: 0.8s">
+            <div class="px-12 py-10 flex justify-between items-end border-b border-white/50 bg-white/30 backdrop-blur-sm">
+                <div>
+                    <h3 class="text-2xl font-black text-[#002d5a] tracking-tight">최근 주요 발생 이슈</h3>
+                    <p class="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">최근 1주일간 보고된 긴급 점검 항목입니다</p>
+                </div>
+                <a href="{% url 'issue_list' %}" class="px-5 py-2.5 bg-[#0067b1] text-white rounded-xl text-[11px] font-black uppercase tracking-tighter shadow-xl shadow-blue-500/30 hover:scale-105 transition-all">
+                    전체 로그 보기
+                </a>
+            </div>
+            
+            <div class="p-4 overflow-x-auto">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-8">
+                    {% for issue in recent_issues %}
+                    <div class="group hover:scale-[1.01] transition-all duration-300 cursor-pointer" onclick="window.location.href='{% url 'issue_detail' issue.pk %}'">
+                        <div class="bg-white/60 group-hover:bg-white rounded-3xl px-8 py-6 border border-white shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                {% if issue.status == '진행중' %}
+                                <span class="px-4 py-2 bg-[#0067b1] text-white text-[10px] font-black rounded-xl shadow-lg shadow-blue-500/20 uppercase">진행중</span>
+                                {% else %}
+                                <span class="px-4 py-2 bg-slate-100 text-slate-400 text-[10px] font-black rounded-xl uppercase">{{ issue.status }}</span>
+                                {% endif %}
+                                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{{ issue.issue_date|date:"Y-m-d" }}</span>
+                            </div>
+                            <h4 class="font-black text-sm text-[#002d5a] mb-2 group-hover:text-[#0067b1] transition-colors line-clamp-1">{{ issue.title|default:"-" }}</h4>
+                            <div class="space-y-2 mt-4">
+                                <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                                    <i class="fa-solid fa-building text-slate-400" style="font-size: 14px;"></i>
+                                    <span>{{ issue.target_cluster.customer.name|default:"-" }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                                    <i class="fa-solid fa-map-marker-alt text-slate-400" style="font-size: 14px;"></i>
+                                    <span>{{ issue.target_cluster.cluster_name|default:"-" }}</span>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex items-center justify-between">
+                                {% if issue.issue_type == 'part_replacement' %}
+                                <span class="text-[10px] font-black px-2 py-1 bg-green-100 text-green-700 border border-green-200 rounded-md shadow-sm">
+                                    {{ issue.get_issue_type_display }}
+                                </span>
+                                {% elif issue.issue_type == 'service_outage' %}
+                                <span class="text-[10px] font-black px-2 py-1 bg-red-100 text-red-700 border border-red-200 rounded-md shadow-sm">
+                                    {{ issue.get_issue_type_display }}
+                                </span>
+                                {% else %}
+                                <span class="text-[10px] font-black px-2 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-md shadow-sm">
+                                    {{ issue.get_issue_type_display }}
+                                </span>
+                                {% endif %}
+                                <span class="text-[#0067b1] text-xs font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                    상세보기 <i class="fa-solid fa-chevron-right" style="font-size: 14px;"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-span-3 py-20 text-center">
+                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                            <i class="fa-solid fa-box text-4xl"></i>
+                        </div>
+                        <p class="text-gray-500 font-bold">최근 발생한 이슈가 없습니다.</p>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
-            {% empty %}
-            <div class="col-span-3 py-12 text-center text-gray-400">
-                <i class="fa-solid fa-inbox text-4xl mb-4 block"></i>
-                최근 1주일 내 발생한 이슈가 없습니다.
-            </div>
-            {% endfor %}
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+    // 그라데이션 생성 함수
+    function createGradient(ctx, color1, color2) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, color1);
+        gradient.addColorStop(1, color2);
+        return gradient;
+    }
+
+    // 중앙 텍스트 플러그인
+    const centerTextPlugin = {
+        id: 'centerText',
+        beforeDraw: function(chart) {
+            const ctx = chart.ctx;
+            const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+            const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+            
+            ctx.save();
+            ctx.font = 'bold 24px Plus Jakarta Sans';
+            ctx.fillStyle = '#1f2937';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+            ctx.fillText(total, centerX, centerY - 10);
+            
+            ctx.font = '12px Plus Jakarta Sans';
+            ctx.fillStyle = '#6b7280';
+            ctx.fillText('Total', centerX, centerY + 15);
+            ctx.restore();
+        }
+    };
+
     // 글로벌 장비 배치 현황 (도넛 차트)
     const countryCtx = document.getElementById('countryChart').getContext('2d');
+    const countryGradients = [
+        createGradient(countryCtx, '#3b82f6', '#60a5fa'),
+        createGradient(countryCtx, '#60a5fa', '#93c5fd'),
+        createGradient(countryCtx, '#06b6d4', '#22d3ee'),
+        createGradient(countryCtx, '#22d3ee', '#67e8f9'),
+        createGradient(countryCtx, '#6366f1', '#818cf8'),
+        createGradient(countryCtx, '#818cf8', '#a5b4fc')
+    ];
+    
+    const countryData = {{ country_data|safe }};
+    const countryBgColors = [];
+    for (let i = 0; i < countryData.length; i++) {
+        countryBgColors.push(countryGradients[i % countryGradients.length]);
+    }
+
     new Chart(countryCtx, {
         type: 'doughnut',
         data: {
             labels: {{ country_labels|safe }},
             datasets: [{
-                data: {{ country_data|safe }},
-                backgroundColor: [
-                    '#0067B3', '#00DDF4', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'
-                ]
+                data: countryData,
+                backgroundColor: countryBgColors,
+                borderWidth: 5,
+                borderColor: '#ffffff',
+                hoverBorderWidth: 8,
+                hoverOffset: 15
             }]
         },
+        plugins: [centerTextPlugin],
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            cutout: '70%',
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 2000,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        font: {
+                            size: 12,
+                            weight: 'bold',
+                            family: 'Plus Jakarta Sans'
+                        },
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const dataset = data.datasets[0];
+                                    const value = dataset.data[i];
+                                    const total = dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return {
+                                        text: `${label} (${percentage}%)`,
+                                        fillStyle: dataset.backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 15,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
                 }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
         }
     });
 
     // 장비 모델 분포 (도넛 차트)
     const modelCtx = document.getElementById('modelChart').getContext('2d');
+    const modelGradients = [
+        createGradient(modelCtx, '#6366f1', '#818cf8'),
+        createGradient(modelCtx, '#818cf8', '#a5b4fc'),
+        createGradient(modelCtx, '#3b82f6', '#60a5fa'),
+        createGradient(modelCtx, '#06b6d4', '#22d3ee'),
+        createGradient(modelCtx, '#22d3ee', '#67e8f9')
+    ];
+    
+    const modelData = {{ chart_data|safe }};
+    const modelBgColors = [];
+    for (let i = 0; i < modelData.length; i++) {
+        modelBgColors.push(modelGradients[i % modelGradients.length]);
+    }
+
     new Chart(modelCtx, {
         type: 'doughnut',
         data: {
             labels: {{ chart_labels|safe }},
             datasets: [{
-                data: {{ chart_data|safe }},
-                backgroundColor: [
-                    '#0067B3', '#00DDF4', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'
-                ]
+                data: modelData,
+                backgroundColor: modelBgColors,
+                borderWidth: 5,
+                borderColor: '#ffffff',
+                hoverBorderWidth: 8,
+                hoverOffset: 15
             }]
         },
+        plugins: [centerTextPlugin],
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            cutout: '70%',
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 2000,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        font: {
+                            size: 12,
+                            weight: 'bold',
+                            family: 'Plus Jakarta Sans'
+                        },
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const dataset = data.datasets[0];
+                                    const value = dataset.data[i];
+                                    const total = dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return {
+                                        text: `${label} (${percentage}%)`,
+                                        fillStyle: dataset.backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 15,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
                 }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
         }
     });
 
     // 고객사별 장비 대수 (도넛 차트)
     const customerCtx = document.getElementById('customerChart').getContext('2d');
+    const customerGradients = [
+        createGradient(customerCtx, '#06b6d4', '#22d3ee'),
+        createGradient(customerCtx, '#22d3ee', '#67e8f9'),
+        createGradient(customerCtx, '#3b82f6', '#60a5fa'),
+        createGradient(customerCtx, '#6366f1', '#818cf8'),
+        createGradient(customerCtx, '#818cf8', '#a5b4fc')
+    ];
+    
+    const customerData = {{ customer_data|safe }};
+    const customerBgColors = [];
+    for (let i = 0; i < customerData.length; i++) {
+        customerBgColors.push(customerGradients[i % customerGradients.length]);
+    }
+
     new Chart(customerCtx, {
         type: 'doughnut',
         data: {
             labels: {{ customer_labels|safe }},
             datasets: [{
-                data: {{ customer_data|safe }},
-                backgroundColor: [
-                    '#0067B3', '#00DDF4', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'
-                ]
+                data: customerData,
+                backgroundColor: customerBgColors,
+                borderWidth: 5,
+                borderColor: '#ffffff',
+                hoverBorderWidth: 8,
+                hoverOffset: 15
             }]
         },
+        plugins: [centerTextPlugin],
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            cutout: '70%',
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 2000,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        font: {
+                            size: 12,
+                            weight: 'bold',
+                            family: 'Plus Jakarta Sans'
+                        },
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const dataset = data.datasets[0];
+                                    const value = dataset.data[i];
+                                    const total = dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return {
+                                        text: `${label} (${percentage}%)`,
+                                        fillStyle: dataset.backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 15,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
                 }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
         }
     });
